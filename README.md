@@ -32,7 +32,7 @@ final_output: "/shared/projects/pacobar/finalresult/bpajot/outputs/"
 input_reference_genome: "/shared/projects/pacobar/input/reference/Reference_Littorina_saxatilis_reshape.fa"
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
-The part to change is the part underlined with arrows. (The arrow lines do not exist in the file, they are simply added here to show which parts to change in the `config.yaml` file).
+The part to change is the part underlined with arrows. (The arrow lines do not exist in the file, they are simply added here to show which parts to change in the `config_params.yaml` file).
 
 
 ## [Profile_config](./profile_config/) (directory)
