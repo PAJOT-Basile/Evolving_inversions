@@ -62,6 +62,13 @@ These paths are to create the log files. The part to change is the part underlin
 ## [launcher.sh](./launcher.sh) (script)
 
 This script, as its name indicates it is used as a launcher to start running the snakemake. It simply loads the required modules for the analysis to start and creates an empty file used as input for the snakemake workflow.
+This file has to be changed for the part that precieses the path to the temporary file:
+```
+# Where to put temporary files
+TMPDIR="/shared/scratch/pacobar/bpajot/outputs/tmp/"
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+The part to change is the part underlined with arrows. (The arrow lines do not exist in the file, they are simply added here to show which parts to change in the `launcher.sh` file).
 
 ## [snakemake_functions.py](./snakemake_functions.py) (script)
 
