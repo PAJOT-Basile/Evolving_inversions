@@ -46,7 +46,7 @@ def list_samples(directory, patterns_in="None", patterns_out="None"):
     # If the list "patterns_out" is not empty, we filter the list of file names ("list_of_samples") to remove those that contain the
     # patterns contained in "patterns_out"
     if patterns_out != "None":
-        list_of_samples = pd.Series([sample for sample in list_of_samples for pattern in patterns_out if pattern not in sample])           
+        list_of_samples = list_of_samples[list_of_samples.apply(lambda filter: all(word not in filter for word in patterns_out))].sort_values()        
     
     # We then remove the end part of the file name (the extension) to only keep the sample name
     list_of_samples = list(list_of_samples.str.replace(".R1.fastq.gz", ""))
