@@ -40,42 +40,51 @@ REGIONS = get_chromosome_positions_breaks(reference_genome, bin_size=bin_size)
 
 ######################## Global variables  ###############################
 READS = ["R1", "R2"]
+STEPS = ["Fastp", "Raw"]
 
 ######################## Memory allocation functions  ###############################
 ######################## Get the input file size  ###############################
-def get_input_file_size(wildcards):
-    input_filename = config["raw_data_path"] + wildcards.sample + ".R2.fastq.gz"
-    input_file_size = ( os.path.getsize(input_filename) // (1024 * 1024) ) / 1000
-    return(input_file_size * 1000)
+def get_input_file_size(wildcards, input):
+    return(input.size_mb)
 
 ######################## FastP  ###############################
-def get_mem_mb_fastp(wildcards):
-    input_file_size = get_input_file_size(wildcards)
+def get_mem_mb_fastp(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
     return(input_file_size * 0.2 + 5000)
 
+######################## FastQC  ###############################
+def get_mem_mb_fastqc(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
+    return(0.002 * input_file_size + 2640)
+
+######################## MultiQC  ###############################
+def get_mem_mb_multiqc(wildcards, input):
+    nb_individuals = len(input.zip)/2
+    return(nb_individuals * 27 + 765)
+
 ######################## BWA MEM  ###############################
-def get_mem_mb_bwa(wildcards):
-    input_file_size = get_input_file_size(wildcards)
+def get_mem_mb_bwa(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
     return(0.2 * input_file_size + 10000)
 
 ######################## Samtools Collate  ###############################
-def get_mem_mb_collate(wildcards):
-    input_file_size = get_input_file_size(wildcards)
+def get_mem_mb_collate(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
     return(0.4 * input_file_size + 7000)
 
 ######################## Samtools fixmate  ###############################
-def get_mem_mb_fixmate(wildcards):
-    input_file_size = get_input_file_size(wildcards)
+def get_mem_mb_fixmate(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
     return(0.01 * input_file_size + 4000)
 
 ######################## Samtools sort  ###############################
-def get_mem_mb_sort(wildcards):
-    input_file_size = get_input_file_size(wildcards)
+def get_mem_mb_sort(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
     return(0.02 * input_file_size + 15000)
 
 ######################## Samtools markdup  ###############################
-def get_mem_mb_markdup(wildcards):
-    input_file_size = get_input_file_size(wildcards)
+def get_mem_mb_markdup(wildcards, input):
+    input_file_size = get_input_file_size(wildcards, input)
     return(0.001 * input_file_size + 1750)
 
 
@@ -92,22 +101,47 @@ def get_mem_mb_markdup(wildcards):
 # Allows to check for input and outputs
 rule all:
     input:
+        # Rule N01_Create_Arborescence
         ".mkdir.done",
-        expand(final_output + "Fastqc_out/{sample}.{read}_fastqc.html", sample=SAMPLES, read=READS),
-        final_output + "MultiQC/Quality_results.html",
+
+        # Rule N02_FastP
         expand(final_output + "Fastp/html/{sample}.html", sample=SAMPLES),
         expand(final_output + "Fastp/json/{sample}.json", sample=SAMPLES),
+
+        # Rule N04_MultiQC
+        expand(final_output + "MultiQC/Quality_results_on_{step}.html", step=STEPS),
+
+        # Rule N05_Move_Fastqc_out
+        expand(final_output + "Fastqc_out/{step}/{sample}.{read}_fastqc.html", sample=SAMPLES, read=READS, step=STEPS),
+
+        # Rule N10_Mark_duplicates
         expand(final_output + "Marked_duplicates/{sample}.cram", sample=SAMPLES),
+
+        # Rule N11_Index_Flagstate
         expand(final_output + "Marked_duplicates/{sample}.cram.crai", sample=SAMPLES),
         expand(final_output + "Flagstat_reports/{sample}.flagstat", sample=SAMPLES),
-        final_output + "Stats_VCF/Number_SNPs_per_region.csv",
+
+        # Rule N13_Compile_CRAM_files
         expand(final_output + "Full_VCF/VCF_File_{region}.vcf.gz", region=REGIONS),
+
+        # Rule N14_Count_SNPs_2
+        final_output + "Stats_VCF/Number_SNPs_per_region.csv",
+
+        # Rule N15_Concatenate_VCFs
+        #final_output + "Full_VCF/Variant_calling_with_ref_genome.vcf.gz"
+
+        # Rule N17_VCF_Concat_after_filtering
         final_output + "Filtered_VCF/Removed_indels_and_multiallelic_sites.vcf.gz",
+
+        # Rule N19_Concat_Stats
         final_output + "Stats/DP/vcfstats.DP.txt",
         final_output + "Stats/MQ/vcfstats.MQ.txt",
         final_output + "Stats/QUAL/vcfstats.QUAL.txt",
         final_output + "Stats/SP/vcfstats.SP.txt",
-        final_output + "Stats/AF/vcfstats.AF.txt"
+        final_output + "Stats/AF/vcfstats.AF.txt",
+
+        # Rule N21_Concatenate_Missing_data
+        final_output + "Missing_data/Full_data.lmiss"
 
 
 ######################## Create arborescence  ###############################
@@ -117,88 +151,88 @@ rule N01_Create_Arborescence:
     output:
         directory(".mkdir.done")
     params:
-        final_output + "Fastqc_out/",
-        outputs_files + "Fastqc_out/",
-        final_output + "MultiQC/",
+        # Rule N02_FastP
         outputs_files + "Fastp/",
-        final_output + "Fastp/html/",
         final_output + "Fastp/json/",
+        final_output + "Fastp/html/",
+
+        # Rule N03_FastQC
+        final_output + "Fastqc_out/Raw/",
+        outputs_files + "Fastqc_out/Raw/",
+        final_output + "Fastqc_out/Fastp/",
+        outputs_files + "Fastqc_out/Fastp/",
+
+        # Rule N04_MultiQC
+        final_output + "MultiQC/",
+
+        # Rule N06_Map_ref_genome
         outputs_files + "Mapped_genomes/",
+
+        # Rule N07_Collate_CRAM
         outputs_files + "Sorted_genomes/",
+
+        # Rule N10_Mark_duplicates
         final_output + "Marked_duplicates/",
+
+        # Rule N11_Index_Flagstate
         final_output + "Flagstat_reports/",
+
+        # Rule N12_Create_list_CRAM_files
         outputs_files + "Concatenation/",
+
+        # Rule N13_Compile_CRAM_files
         outputs_files + "VCF_files/",
-        final_output + "Removed_indels/",
+
+        # Rule N14_Count_SNPs       
+        final_output + "Stats_VCF/",
         outputs_files + "Stats_VCF",
+
+        # Rule N15_Concatenate_VCFs
+        final_output + "Full_VCF/",
+        
+        # Rule N16_Remove_Indels
+        final_output + "Removed_indels/",
+
+        # Rule N17_VCF_Concat_after_filtering
+        final_output + "Filtered_VCF/",
+
+        # Rule N18_Stats_Filtering
         outputs_files + "Stats/DP/",
         outputs_files + "Stats/MQ/",
         outputs_files + "Stats/QUAL/",
         outputs_files + "Stats/SP/",
         outputs_files + "Stats/AF/",
-        final_output + "Stats_VCF/",
-        final_output + "Full_VCF/",
-        final_output + "Filtered_VCF/",
+
+        # Rule N19_Concat_Stats
         final_output + "Stats/DP/",
         final_output + "Stats/MQ/",
         final_output + "Stats/QUAL/",
         final_output + "Stats/SP/",
         final_output + "Stats/AF/",
+
+        # Rule N20_Missing_data
+        outputs_files + "Missing_data/",
+
+        # Rule N21_Concatenate_Missing_data
+        final_output + "Missing_data/",
+
+        # Temporary files
+        temp_path,
+
     shell:
         """
             mkdir -p {output:q} {params:q}
         """
 
-######################## Run Fastqc on raw data  ###############################
-rule N02_FastQC:
+######################## Run FastP on raw files  ###############################
+rule N02_FastP:
     input:
         fake = rules.N01_Create_Arborescence.output,
-        real = raw_data_path + "{sample}.{read}.fastq.gz"
-    output:
-        zip_out = temp(outputs_files + "Fastqc_out/{sample}.{read}_fastqc.zip"),
-        html_out = outputs_files + "Fastqc_out/{sample}.{read}_fastqc.html"
-    message:
-        "Processing {wildcards.sample}.{wildcards.read} in FastQC"
-    shell :
-        """
-            OUTDIR="{config[outputs_files]:q}Fastqc_out/"
-            fastqc {input.real:q} -o $OUTDIR
-        """
-
-
-######################## Run MultiQC on fastqc output  ###############################
-rule N03_MultiQC:
-    input:
-        zip = expand(rules.N02_FastQC.output.zip_out, sample=SAMPLES, read=READS),
-        html = expand(rules.N02_FastQC.output.html_out, sample=SAMPLES, read=READS),
-    output:
-        Multiqc = final_output + "MultiQC/Quality_results.html",
-        fastqc = expand(final_output + "Fastqc_out/{sample}.{read}_fastqc.html", sample=SAMPLES, read=READS)
-    params:
-        INDIR = outputs_files + "Fastqc_out/",
-        OUTNAME = final_output + "MultiQC/Quality_results"
-    resources:
-        mem_mb = config["mem_multiqc"]
-    message:
-        "Quality control with MultiQC"
-    shell:
-        """
-            OUTDIR="{config[final_output]:q}MultiQC/"
-            mkdir -p $OUTDIR
-            multiqc {params.INDIR:q} -o $OUTDIR -n {params.OUTNAME:q}
-            mkdir -p {config[outputs_files]}/Fastqc_out/
-            mv "{config[outputs_files]}Fastqc_out/*.html" "{config[final_output]}Fastqc_out/"
-        """
-
-
-######################## Run FastP on raw files  ###############################
-rule N04_FastP:
-    input:
         raw_R1 = raw_data_path + "{sample}.R1.fastq.gz",
         raw_R2 = raw_data_path + "{sample}.R2.fastq.gz"
     output:
-        fastp_R1 = temp(outputs_files + "Fastp/{sample}_R1.fastq.gz"),
-        fastp_R2 = temp(outputs_files + "Fastp/{sample}_R2.fastq.gz"),
+        fastp_R1 = temp(outputs_files + "Fastp/{sample}.R1.fastq.gz"),
+        fastp_R2 = temp(outputs_files + "Fastp/{sample}.R2.fastq.gz"),
         html = final_output + "Fastp/html/{sample}.html",
         json = final_output + "Fastp/json/{sample}.json"
     threads: 4
@@ -212,11 +246,78 @@ rule N04_FastP:
         """
 
 
+######################## Function to create a rule for the fastqc on different steps  ###############################
+def rule_fastqc(step, raw_data_path, outputs_files):
+    rule:
+        name: f"N03_FastQC_on_{step}"
+        input:
+            real = input_fastqc(step, raw_data_path, outputs_files),
+            fake = rules.N01_Create_Arborescence.output
+        output:
+            zip_out = temp(outputs_files + f"Fastqc_out/{step}/{{sample}}.{{read}}_fastqc.zip"),
+            html_out = outputs_files + f"Fastqc_out/{step}/{{sample}}.{{read}}_fastqc.html"
+        message:
+            f"{step} data of sample {{wildcards.sample}}.{{wildcards.read}} in FastQC"
+        resources:
+            mem_mb = get_mem_mb_fastqc
+        shell:
+            f"""
+                fastqc {{input.real:q}} -o {{config[outputs_files]:q}}Fastqc_out/{step}/
+            """
+
+
+######################## Function to create a rule for the multiqc on different steps  ###############################
+def rule_multiqc(step, outputs_files, final_output):
+    rule:
+        name: f"N04_MultiQC_on_{step}"
+        input:
+            zip = expand(outputs_files + f"Fastqc_out/{step}/{{sample}}.{{read}}_fastqc.zip", sample=SAMPLES, read=READS),
+            html = expand(outputs_files + f"Fastqc_out/{step}/{{sample}}.{{read}}_fastqc.html", sample=SAMPLES, read=READS)
+        output:
+            final_output + f"MultiQC/Quality_results_on_{step}.html"
+        params:
+            INDIR = outputs_files + f"Fastqc_out/{step}/",
+            OUTDIR = final_output + "MultiQC/",
+            OUTNAME = final_output + f"MultiQC/Quality_results_on_{step}"
+        resources:
+            mem_mb = get_mem_mb_multiqc
+        message:
+            f"Quality control with MultiQC on {step} data"
+        shell:
+            """
+                multiqc {params.INDIR:q} -o {params.OUTDIR:q} -n {params.OUTNAME:q} --force
+            """
+
+
+######################## Function to create a rule for the multiqc on different steps  ###############################
+def move_output(step, outputs_files, final_output):
+    rule:
+        name: f"N05_Move_Fastqc_out_after_{step}"
+        input:
+            final_output + f"MultiQC/Quality_results_on_{step}.html"
+        output:
+            expand(final_output + f"Fastqc_out/{step}/{{sample}}.{{read}}_fastqc.html", sample=SAMPLES, read=READS)
+        params:
+            inputs = expand(outputs_files + f"Fastqc_out/{step}/{{sample}}.{{read}}_fastqc.html", sample=SAMPLES, read=READS),
+            outdir = final_output + f"Fastqc_out/{step}/",
+        shell:
+            """
+                mv {params.inputs:q} {params.outdir:q}
+            """
+
+
+######################## Run the created functions on the raw and trimmed data  ###############################
+for counter, step in enumerate(STEPS):
+    rule_fastqc(step, raw_data_path, outputs_files)
+    rule_multiqc(step, outputs_files, final_output)
+    move_output(step, outputs_files, final_output)
+
+
 ######################## Map on the reference genome  ###############################
-rule N05_Map_ref_genome:
+rule N06_Map_ref_genome:
     input:
-        trimmed_R1 = rules.N04_FastP.output.fastp_R1,
-        trimmed_R2 = rules.N04_FastP.output.fastp_R2,
+        trimmed_R1 = rules.N02_FastP.output.fastp_R1,
+        trimmed_R2 = rules.N02_FastP.output.fastp_R2,
         reference_genome_indexed = reference_genome + ".amb",
         ref_genome = reference_genome
     output:
@@ -236,9 +337,9 @@ rule N05_Map_ref_genome:
 
 
 ######################## Collate the CRAM files  ###############################
-rule N06_Collate_CRAM:
+rule N07_Collate_CRAM:
     input:
-        rules.N05_Map_ref_genome.output
+        rules.N06_Map_ref_genome.output
     output:
         temp(outputs_files + "Sorted_genomes/{sample}.0.cram")
     threads: 10
@@ -253,9 +354,9 @@ rule N06_Collate_CRAM:
 
 
 ######################## Fixmate the CRAM files  ###############################
-rule N07_Fixmate_CRAM:
+rule N08_Fixmate_CRAM:
     input:
-        rules.N06_Collate_CRAM.output
+        rules.N07_Collate_CRAM.output
     output:
         temp(outputs_files + "Sorted_genomes/{sample}.1.cram")
     threads: 10
@@ -272,9 +373,9 @@ rule N07_Fixmate_CRAM:
 
 
 ######################## Sort the CRAM files  ###############################
-rule N08_Sort_CRAM:
+rule N09_Sort_CRAM:
     input:
-        rules.N07_Fixmate_CRAM.output
+        rules.N08_Fixmate_CRAM.output
     output:
         temp(outputs_files + "Sorted_genomes/{sample}.cram")
     threads: 10
@@ -289,9 +390,9 @@ rule N08_Sort_CRAM:
 
 
 ######################## Mark the duplicates  ###############################
-rule N09_Mark_duplicates:
+rule N10_Mark_duplicates:
     input:
-        rules.N08_Sort_CRAM.output
+        rules.N09_Sort_CRAM.output
     output:
         final_output + "Marked_duplicates/{sample}.cram"
     threads: 10
@@ -305,11 +406,10 @@ rule N09_Mark_duplicates:
         """
 
 
-
 ######################## Index the CRAM file and do some stats  ###############################
-rule N10_Index_Flagstate:
+rule N11_Index_Flagstate:
     input:
-        rules.N09_Mark_duplicates.output
+        rules.N10_Mark_duplicates.output
     output:
         index = final_output + "Marked_duplicates/{sample}.cram.crai",
         flagstat = final_output + "Flagstat_reports/{sample}.flagstat"
@@ -324,7 +424,7 @@ rule N10_Index_Flagstate:
 
 
 ######################## Make a list of the CRAM files  ###############################
-rule N11_Create_list_CRAM_files:
+rule N12_Create_list_CRAM_files:
     input:
         real = expand(final_output + "Marked_duplicates/{sample}.cram", sample=SAMPLES),
         fake = expand(final_output + "Marked_duplicates/{sample}.cram.crai", sample=SAMPLES)
@@ -338,11 +438,11 @@ rule N11_Create_list_CRAM_files:
 
 
 ######################## Variant Calling  ###############################
-rule N12_Compile_CRAM_files:
+rule N13_Compile_CRAM_files:
     input:
         ref_genome = reference_genome,
-        list_cram_files = rules.N11_Create_list_CRAM_files.output,
-        fake = expand(rules.N10_Index_Flagstate.output.index, sample=SAMPLES)
+        list_cram_files = rules.N12_Create_list_CRAM_files.output,
+        fake = expand(rules.N11_Index_Flagstate.output.index, sample=SAMPLES)
     output:
         final_output + "Full_VCF/VCF_File_{region}.vcf.gz"
     threads: 10
@@ -361,9 +461,9 @@ rule N12_Compile_CRAM_files:
 
 
 ######################## Count the number of SNPs in the file part 1  ###############################
-rule N13_Count_SNPs:
+rule N14_Count_SNPs:
     input:
-        outputs_files + "VCF_files/VCF_File_{region}.vcf.gz",
+        rules.N13_Compile_CRAM_files.output
     output:
         temp(outputs_files + "Stats_VCF/Number_SNPs_{region}.csv")
     shell:
@@ -374,19 +474,19 @@ rule N13_Count_SNPs:
 
 
 ######################## Count the number of SNPs in the file part 2  ###############################
-rule N13_Count_SNPs_2:
+rule N14_Count_SNPs_2:
     input:
-        temporary = expand(outputs_files + "Stats_VCF/Number_SNPs_{region}.csv", region=REGIONS),
+        rules.N14_Count_SNPs.output
     output:
         final_output + "Stats_VCF/Number_SNPs_per_region.csv",
     shell:
         """
-            cat {input.temporary:q} >> {output:q}
+            cat {input:q} >> {output:q}
         """
 
 
 ######################## Concatenate the VCF files  ###############################
-#rule N14_Concatenate_VCFs:
+#rule N15_Concatenate_VCFs:
 #    input:
 #        expand(outputs_files + "VCF_files/VCF_File_{regions}.vcf.gz", regions=REGIONS)
 #    output:
@@ -405,9 +505,9 @@ rule N13_Count_SNPs_2:
 
 
 ######################## Remove Indels and multiallelic sites  ###############################
-rule N15_Remove_Indels:
+rule N16_Remove_Indels:
     input:
-        rules.N12_Compile_CRAM_files.output
+        rules.N13_Compile_CRAM_files.output
     output:
         temp(outputs_files + "Removed_indels/SNP_only_{region}.vcf.gz")
     threads: 10
@@ -422,9 +522,9 @@ rule N15_Remove_Indels:
 
 
 ######################## Concatenating filtered VCFs  ###############################
-rule N16_VCF_Concat_after_filtering:
+rule N17_VCF_Concat_after_filtering:
     input:
-        expand(rules.N15_Remove_Indels.output, region=REGIONS)
+        expand(rules.N16_Remove_Indels.output, region=REGIONS)
     output:
         temp_out = temp(outputs_files + "Filtered_VCF/Removed_indels_and_multiallelic_sites.vcf"),
         real_out = final_output + "Filtered_VCF/Removed_indels_and_multiallelic_sites.vcf.gz"
@@ -439,9 +539,9 @@ rule N16_VCF_Concat_after_filtering:
 
 
 ######################## Stats  ###############################
-rule N17_Stats_Filtering:
+rule N18_Stats_Filtering:
     input:
-        rules.N15_Remove_Indels.output,
+        rules.N16_Remove_Indels.output,
     output:
         tot_depth = temp(outputs_files + "Stats/DP/depth_stats_{region}.txt"),
         map_qual = temp(outputs_files + "Stats/MQ/map_q_{region}.txt"),
@@ -473,7 +573,7 @@ rule N17_Stats_Filtering:
 
 
 ######################## Concat Stats  ###############################
-rule N17_Concat_Stats:
+rule N19_Concat_Stats:
     input:
         tot_depth = expand(outputs_files + "Stats/DP/depth_stats_{region}.txt", region=REGIONS),
         map_qual = expand(outputs_files + "Stats/MQ/map_q_{region}.txt", region=REGIONS),
@@ -495,4 +595,35 @@ rule N17_Concat_Stats:
             cat {input.site_qual:q} > {output.site_qual:q}
             cat {input.phred:q} > {output.phred:q}
             cat {input.allel_freq:q} > {output.allel_freq:q}
+        """
+
+
+######################## Get missing data per region  ###############################
+rule N20_Missing_data:
+    input:
+        real = rules.N16_Remove_Indels.output,
+        fake = rules.N01_Create_Arborescence.output
+    output:
+        expected = temp(outputs_files + "Missing_data/{region}.lmiss")
+    params:
+        prefix = outputs_files + "Missing_data/{region}"
+    message:
+        "Getting missing data on region: {wildcards.region}"
+    shell:
+        """
+            vcftools --gzvcf {input.real:q} --out {params.prefix:q} --missing-site
+        """
+
+
+######################## Get missing data per region  ###############################
+rule N21_Concatenate_Missing_data:
+    input:
+        expand(rules.N20_Missing_data.output.expected, region=REGIONS)
+    output:
+        final_output + "Missing_data/Full_data.lmiss"
+    message:
+        "Concatenating Missing_data"
+    shell:
+        """
+            cat {input:q} > {output:q}
         """
