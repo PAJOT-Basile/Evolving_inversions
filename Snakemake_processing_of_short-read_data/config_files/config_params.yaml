@@ -56,8 +56,6 @@ patterns_out: None
 bin_size: 1e7
 
 ########################  Pattern recognition in the raw files  ###############################
-# Memory to allocate to step multiqc
-mem_multiqc: 50000     #50G
 # Memory to allocate to mpileup
 mem_mpileup: 32000     #32G
 
