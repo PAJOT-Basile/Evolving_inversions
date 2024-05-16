@@ -7,13 +7,21 @@
 ################################################################################
 ################### 1. Genetic frequency clines  ###############################
 ################################################################################
-stable <- function(x, p_all, g){
+stable <- function(x, p_all, g=0, n=0, optimisation = TRUE, plotting = FALSE){
   #' This function estimates a stable frequency variation along the transect
   fx <- p_all 
-  minusll <- -sum(dbinom(g, 1, fx, log=TRUE))
-} 
+  # If we are optimising the function, we return the likelihood
+  if (isTRUE(optimisation)){
+    minusll <- -sum(dbinom(g, n, fx, log=TRUE))
+    return(minusll)
+  }
+  if (isTRUE(plotting)){
+    phen.cline <- data.frame(phen_cline = fx, position = x)
+    return(phen.cline)
+  }
+}
 
-linear <- function(x, p_left, p_right, g, optimisation=TRUE, plotting=FALSE){
+linear <- function(x, p_left, p_right, g=0, n=0, optimisation=TRUE, plotting=FALSE){
   #' This function estimates a linear frequency variation along the transect
   fx <- p_left + (p_right - p_left) * (x - min(x)) / (max(x) - min(x))
   # If the optimization argument is set to true (default), the calculation of 
@@ -22,12 +30,12 @@ linear <- function(x, p_left, p_right, g, optimisation=TRUE, plotting=FALSE){
     # The likelihood calculation relies on the hypothesis that g is binomial  
     # from a sample of 2 alleles with frequency z_x
     # This effectively assumes HWE.
-    minusll <- -sum(dbinom(g, 1, fx, log=TRUE))
+    minusll <- -sum(dbinom(g, n, fx, log=TRUE))
     return(minusll)
   }
   # If the plotting argument is true, we return the data to visualize it
   if (isTRUE(plotting)){
-    phen_cline = data.frame(phen_cline = fx, position = x)
+    phen_cline <- data.frame(phen_cline = fx, position = x)
     return(phen_cline)
   }
 }
@@ -56,21 +64,21 @@ clinef <- function(x, g=0, n=0, centre, width, left, right, optimisation=TRUE, p
   if (isTRUE(plotting)){
     # Here, we directly add the calculated data into a data frame, so we can 
     # plot it
-    phen_cline = data.frame(phen_cline = z_x, position = x)
+    phen_cline <- data.frame(phen_cline = z_x, position = x)
     return(phen_cline)
   }
 
 }
-clineflog<- function(x,g,n,centre,width,right,left){
-  wi<-exp(width)
-  c<-exp(right)/(1+exp(right))
-  w <- exp(left)/(1+exp(left))
-  d<-x-centre
-  p_x<- 1/(1+exp(0-4*(d)/wi))
+clineflog <-  function(x, g, n, centre, width, left, right){
+  wi <- exp(width)
+  c <- exp(right) / (1 + exp(right))
+  w <- exp(left) / (1 + exp(left))
+  d <- x - centre
+  p_x <- 1/(1 + exp(0 - 4 * (d) / wi))
   # p_x is frequency cline as in HZAR NB p=0 for left, 1 for right
-  z_x<- c + (w-c)*p_x  
+  z_x <- w + (c - w) * p_x  
   # z_x is expected frequency
-  minusll<- -sum(dbinom(g,n,z_x,log=T))
+  minusll <- -sum(dbinom(g, n, z_x, log=TRUE))
   # likelihood calculation, assuming g is a binomial from sample of 2 with frequency z_x
   # this effectively assumes HWE
   return(minusll) 
@@ -100,13 +108,9 @@ cline_phen <- function(phen, position, centre, w, left, right, sl, sc, sr, optim
   }
   # If the plotting argument is true, we return the data to visualize it
   if (isTRUE(plotting)){
-    phen_cline = data.frame(phen_cline = z_x, sd_cline = s_x, position = position)
+    phen_cline <- data.frame(phen_cline = z_x, sd_cline = s_x, position = position)
     # Here, we directly add the calculated data into a data frame, so we can 
     # plot it
     return(phen_cline)
   }
 }
-
-
-
-
