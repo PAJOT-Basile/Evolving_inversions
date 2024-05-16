@@ -14,7 +14,7 @@ enumerate <- function(...){
 }
 
 # Apply the three models to the colors (stable model, linear model and clinal model)
-source("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################################ Useful variables ################################
 # Color palette to be reused everywhere with the shell colors
