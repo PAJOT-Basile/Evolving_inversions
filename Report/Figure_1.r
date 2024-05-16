@@ -3,7 +3,7 @@ require(anyLib)
 anyLib(c("tidyverse", "ggmap", "sp", "tmap", "ggpubr", "marmap", "ggspatial", "cowplot"))
 
 # Register for the use of the google maps
-register_google(key="AIzaSyD8HGsK8KvX2MMO5zIPzgehipwm29Fdvc0")
+register_google(key="")
 
 ################## European map ########################
 # Prepare the sampling site localisation
