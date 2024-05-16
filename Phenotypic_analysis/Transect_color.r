@@ -293,7 +293,101 @@ data1 %>%
                      values = c("Observed brown frequency" = "brown", "Corrected brown allele \nfrequency for a yellow \ndominant allele" = "navyblue")) +
   theme(text = element_text(size=20))
 
-#TODO: Find the confidence intervals of the clines
+# Confidence interval for colour clines
+Conf_interval_cline_color_fr <- data1 %>% 
+  left_join(Priors_values_cline_color, by = "Single_location") %>% 
+  filter(Single_location == "France") %>% 
+  group_by(Single_location) %>% 
+  bow(tie(Centre_2.5, Width_2.5, Left_2.5, Right_2.5, Centre_97.5, Width_97.5, Left_97.5, Right_97.5) :=
+        mle2(clineflog, list(centre = Center %>% unique,
+                          width = Width %>% unique %>% log,
+                          left = Left %>% unique %>% logit,
+                          right = Right %>% unique %>% logit),
+             data = list(x = LCmeanDist,
+                         g = Genotype_shell_color_naive,
+                         n = 1),
+             method ="L-BFGS-B",
+             upper = list(centre = max(LCmeanDist),
+                          width = (max(LCmeanDist) * 2) %>% log,
+                          left = 0.999 %>% logit,
+                          right = 0.999 %>% logit),
+             lower = list(centre = Min_centre_color_Prior %>%
+                            unique,
+                          width = Min_width_color_Prior %>%
+                            unique %>% log,
+                          left = 0.001 %>% logit,
+                          right = 0.001 %>% logit)) %>%
+        confint()) %>%
+  as.data.frame() %>% 
+  mutate(Centre_2.5i = ifelse(min(Centre_2.5, Centre_97.5, na.rm = TRUE) != Inf, min(Centre_2.5, Centre_97.5, na.rm = TRUE), NA),
+         Centre_97.5 = ifelse(min(Centre_2.5, Centre_97.5, na.rm = TRUE) != Inf, max(Centre_2.5, Centre_97.5, na.rm = TRUE), NA),
+         Width_2.5i = ifelse(min(Width_2.5, Width_97.5, na.rm = TRUE) != Inf, min(Width_2.5, Width_97.5, na.rm = TRUE) %>% exp, NA),
+         Width_97.5 = ifelse(min(Width_2.5, Width_97.5, na.rm = TRUE) != Inf, max(Width_2.5, Width_97.5, na.rm = TRUE) %>% exp, NA),
+         Left_2.5i = ifelse(min(Left_2.5, Left_97.5, na.rm = TRUE) != Inf, min(Left_2.5, Left_97.5, na.rm = TRUE) %>% invlogit, NA),
+         Left_97.5 = ifelse(min(Left_2.5, Left_97.5, na.rm = TRUE) != Inf, max(Left_2.5, Left_97.5, na.rm = TRUE) %>% invlogit, NA),
+         Right_2.5i = ifelse(min(Right_2.5, Right_97.5, na.rm = TRUE) != Inf, min(Right_2.5, Right_97.5, na.rm = TRUE) %>% invlogit, NA),
+         Right_97.5 = ifelse(min(Right_2.5, Right_97.5, na.rm = TRUE) != Inf, max(Right_2.5, Right_97.5, na.rm = TRUE) %>% invlogit, NA)) %>%
+  select(Single_location, contains(".5i"), contains("97.")) %>% 
+  rename(Left_2.5 = Left_2.5i,
+         Right_2.5 = Right_2.5i,
+         Centre_2.5 = Centre_2.5i,
+         Width_2.5 = Width_2.5i)
+
+Conf_interval_cline_color_sw <- data1 %>% 
+  left_join(Priors_values_cline_color, by = "Single_location") %>% 
+  filter(Single_location == "Sweden") %>% 
+  group_by(Single_location) %>% 
+  bow(tie(Right_2.5, Right_97.5) :=
+        mle2(stable, list(p_all = p_brown_all %>%
+                            unique),
+             data = list(x=LCmeanDist,
+                         g = Genotype_shell_color_naive,
+                         n = 1),
+             method = "L-BFGS-B",
+             upper = list(p_all = 0.999),
+             lower = list(p_all = 0.001)) %>% 
+        confint()) %>% 
+  as.data.frame %>% 
+  mutate(Width_2.5 = NA, Centre_97.5 = NA, Width_97.5 = NA, Left_97.5 = Right_97.5, Width_ci = NA, Left_2.5 = Right_2.5, Centre_2.5 = NA)
+
+
+color_table <- data1 %>%
+  group_by(Single_location) %>%
+  full_join(Conf_interval_cline_color_fr, by = "Single_location") %>%
+  full_join(Conf_interval_cline_color_sw, by = c(names(Conf_interval_cline_color_fr))) %>% 
+  select(Single_location, contains(".5"), Center, Left, Right, Width, p_brown_all) %>% 
+  unique() %>% 
+  mutate(Right = ifelse(Single_location == "Sweden", data1_color %>%
+                          filter(Single_location == "Sweden") %>%
+                          select(p_brown_all) %>% 
+                          unique %>% as.vector %>% 
+                          unname %>% unlist, Right),
+         Left = ifelse(Single_location == "Sweden", Right, Left),
+         Right_2.5 = ifelse(Right_2.5 == Right_97.5 & Right_2.5 > Right, NA, Right_2.5),
+         Right_97.5 = ifelse(Right_2.5 == Right_97.5 & Right_97.5 < Right, NA, Right_97.5),
+         Width_2.5 = ifelse(Width_2.5 == Width_97.5 & Width_2.5 > Width, NA, Width_2.5),
+         Width_97.5 = ifelse(Width_2.5 == Width_97.5 & Width_97.5 < Width, NA, Width_97.5)) %>% 
+  filter(!is.na(Left_97.5)) %>% 
+  mutate(Centre_ci = ifelse(Single_location == "Sweden", "/", paste0("[", Centre_2.5 %>% round(digits=1), ", ", Centre_97.5 %>% round(digits=1), "]")),
+         Left_ci = paste0("[", Left_2.5 %>% round(digits = 1), ", ", Left_97.5 %>% round(digits = 1), "]"),
+         Right_ci = paste0("[", ifelse(is.na(Right_2.5), Right_97.5, Right_2.5) %>% round(digits = 1), ", ", ifelse(is.na(Right_2.5), Right_2.5, Right_97.5) %>% round(digits = 1), "]"),
+         Width_ci = ifelse(Single_location == "Sweden", "/", paste0("[", Width_2.5 %>% round(digits = 1), ", ", Width_97.5 %>% round(digits = 1), "]")),
+         Left = ifelse(is.na(Left), NA, Left %>% round(digits = 1)),
+         Right = ifelse(is.na(Right), NA, Right %>% round(digits = 1)),
+         Centre = ifelse(Single_location == "Sweden", "/", Center %>% round(digits = 1) %>% as.character),
+         Width = ifelse(Single_location == "Sweden", "/", Width %>% round(digits = 1) %>% as.character),
+         "Zone abritée" = paste(Left, Left_ci),
+         "Zone exposée" = paste(Right, Right_ci),
+         "Centre du cline" = ifelse(Single_location == "Sweden", "/", paste(Centre, Centre_ci)),
+         "Largeur du cline" = ifelse(Single_location == "Sweden", "/", paste(Width, Width_ci)),
+         Pays = ifelse(Single_location == "Sweden", "Suède", "France") %>% 
+           factor(levels = c("Suède", "France"))) %>% 
+  ungroup %>% 
+  select(Pays, "Zone abritée", "Zone exposée", "Centre du cline", "Largeur du cline") %>% 
+  paged_table()
+
+color_table
+
 
 # Recapitulation tables
 AIC_table_color <- data1 %>% 
