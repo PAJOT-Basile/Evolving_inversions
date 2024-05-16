@@ -2,7 +2,7 @@
 library(tidyverse); library(ggforce); library(viridis); library(ggnewscale); library(LaplacesDemon, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/"); library(tie, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/"); library(bbmle); library(zeallot)
 
 # Import functions from another script
-source("/shared/projects/pacobar/finalresult/bpajot/scripts/Phenotypic_analysis/Cline_functions.R")
+source("./Cline_functions.R")
 
 # Make a function that recognises if a string is a number. It returns TRUE if the character is a number and FALSE otherwise
 is_numeric_in_character <- function(x){
