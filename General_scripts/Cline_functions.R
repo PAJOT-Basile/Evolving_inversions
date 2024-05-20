@@ -3,29 +3,40 @@
 # likelihood optimization.
 # It is separated into two parts with in each, some functions to be used
 
+# Libraries
+#install.packages("anyLib")
+require("anyLib")
+anyLib("docstring")
 
 ################################################################################
 ################### 1. Genetic frequency variations  ###########################
 ################################################################################
 stable <- function(x, p_all, g=0, n=0, optimisation = TRUE){
+  #' Represent stable distribution
+  #' 
   #' This function estimates a stable frequency (constant value of allelic
   #' frequency) along the transect
   #' 
-  #' Arguments:
-  #'  x: vector of numeric positions of the individuals along the transect
-  #'  p_all: numeric value of the allelic frequency across the transect
-  #'  g: vector of genotype values for each individual along the transect
-  #'  n: numeric value telling which maximal genetic value can be reached (1 or 2)
-  #'  optimisation: boolean allowing the function to know if it is used in an optimisation
-  #'    phase (default) or if it is used to plot the results. To plot the results of this
-  #'    model, simply change the value of the optimisation to FALSE
+  #'@param x (numeric vector).
+  #'    Positions of the individuals along the transect
+  #'@param p_all (numeric value).
+  #'    Allelic frequency across the transect
+  #'@param g (numeric vector)
+  #'    Genotype values for each individual along the transect
+  #'@param n (numeric value)
+  #'    Maximal genetic value can be reached (1 or 2)
+  #'@param optimisation (boolean).
+  #'    This argument allows the function to know if it is used in an optimisation
+  #'    phase (default) or if it is used to plot the results. To plot the
+  #'    results of this model, simply change the value of the optimisation to FALSE
   #' 
-  #' Returns
-  #'  minusll: (default return) This is opposite of the likelihood of the used parameters
-  #'           to explain the observed genotypes
-  #'  phen_cline: dataframe. If we choose to plot the output of the model, it returns
-  #'           a dataframe containing the position of the individuals on the transect
-  #'           as well as the allelic frequency along the transect
+  #'@returns (numeric value).(default return)
+  #'    This is opposite of the likelihood of the used parameters to explain the
+  #'    observed genotypes
+  #'@returns (dataframe.)
+  #'    If we choose to plot the output of the model, it returns a dataframe
+  #'    containing the position of the individuals on the transect as well as
+  #'    the allelic frequency along the transect
   
   
   fx <- p_all 
@@ -46,24 +57,33 @@ stable <- function(x, p_all, g=0, n=0, optimisation = TRUE){
 }
 
 linear <- function(x, p_left, p_right, g=0, n=0, optimisation=TRUE){
-  #' This function estimates a linear frequency variation along the transect
-  #' Arguments:
-  #'  x: vector of numeric positions of the individuals along the transect
-  #'  p_left: numeric value of the allelic frequency on the left part of the transect
-  #'  p_right: numeric value of the allelic frequency on the right part of the transect
-  #'           (the optimisation of parameters works best if p_left < p_right)
-  #'  g: vector of genotype values for each individual along the transect
-  #'  n: numeric value telling which maximal genetic value can be reached (1 or 2)
-  #'  optimisation: boolean allowing the function to know if it is used in an optimisation
-  #'    phase (default) or if it is used to plot the results. To plot the results of this
-  #'    model, simply change the value of the optimisation to FALSE
+  #' Represent linear distribution
   #' 
-  #' Returns
-  #'  minusll: (default return) This is opposite of the likelihood of the used parameters
-  #'           to explain the observed genotypes
-  #'  phen_cline: dataframe. If we choose to plot the output of the model, it returns
-  #'           a dataframe containing the position of the individuals on the transect
-  #'           as well as the allelic frequency along the transect
+  #' This function estimates a linear frequency variation along the transect.
+  #' 
+  #'@param x (numeric vector).
+  #'    Positions of the individuals along the transect
+  #'@param p_left (numeric value). 
+  #'    Allelic frequency on the left part of the transect.
+  #'@param p_right (numeric value). 
+  #'    Allelic frequency on the right part of the transect.
+  #'@param g (numeric vector)
+  #'    Genotype values for each individual along the transect
+  #'@param n (numeric value)
+  #'    Maximal genetic value can be reached (1 or 2)
+  #'@param optimisation (boolean).
+  #'    This argument allows the function to know if it is used in an optimisation
+  #'    phase (default) or if it is used to plot the results. To plot the
+  #'    results of this model, simply change the value of the optimisation to FALSE
+  #' 
+  #'@returns (numeric value).(default return)
+  #'    This is opposite of the likelihood of the used parameters to explain the
+  #'    observed genotypes. Warning: the optimisation of parameters works best
+  #'    if p_left < p_right
+  #'@returns (dataframe.)
+  #'    If we choose to plot the output of the model, it returns a dataframe
+  #'    containing the position of the individuals on the transect as well as
+  #'    the allelic frequency along the transect
   
   fx <- p_left + (p_right - p_left) * (x - min(x)) / (max(x) - min(x))
   # If the optimization argument is set to true (default), the calculation of 
@@ -83,27 +103,38 @@ linear <- function(x, p_left, p_right, g=0, n=0, optimisation=TRUE){
 }
 
 clinef <- function(x, g=0, n=0, centre, width, left, right, optimisation=TRUE){
-  #' This function estimates a sigmoid cline for allelic frequencies with no transformation. 
-  #'
-  #' Arguments:
-  #'  x: vector of numeric positions of the individuals along the transect
-  #'  centre: numeric value indicating the center of the cline
-  #'  width: numeric value indicating the width of the cline
-  #'  left: numeric value of the allelic frequency on the left part of the transect
-  #'  right: numeric value of the allelic frequency on the right part of the transect
-  #'           (the optimisation of parameters works best if p_left < p_right)
-  #'  g: vector of genotype values for each individual along the transect
-  #'  n: numeric value telling which maximal genetic value can be reached (1 or 2)
-  #'  optimisation: boolean allowing the function to know if it is used in an optimisation
-  #'    phase (default) or if it is used to plot the results. To plot the results of this
-  #'    model, simply change the value of the optimisation to FALSE
+  #' Represent clinal distribution
   #' 
-  #' Returns
-  #'  minusll: (default return) This is opposite of the likelihood of the used parameters
-  #'           to explain the observed genotypes
-  #'  phen_cline: dataframe. If we choose to plot the output of the model, it returns
-  #'           a dataframe containing the position of the individuals on the transect
-  #'           as well as the allelic frequency along the transect
+  #' This function estimates a sigmoid cline for allelic frequencies with no
+  #' transformation. 
+  #'
+  #'@param x (numeric vector).
+  #'    Positions of the individuals along the transect
+  #'@param centre (numeric value).
+  #'    Center of the cline
+  #'@param width (numeric value).
+  #'    Width of the cline
+  #'@param left (numeric value). 
+  #'    Allelic frequency on the left part of the transect.
+  #'@param right (numeric value). 
+  #'    Allelic frequency on the right part of the transect.
+  #'@param g (numeric vector)
+  #'    Genotype values for each individual along the transect
+  #'@param n (numeric value)
+  #'    Maximal genetic value can be reached (1 or 2)
+  #'@param optimisation (boolean).
+  #'    This argument allows the function to know if it is used in an optimisation
+  #'    phase (default) or if it is used to plot the results. To plot the
+  #'    results of this model, simply change the value of the optimisation to FALSE
+  #' 
+  #'@returns (numeric value).(default return)
+  #'    This is opposite of the likelihood of the used parameters to explain the
+  #'    observed genotypes. Warning: the optimisation of parameters works best
+  #'    if p_left < p_right
+  #'@returns (dataframe.)
+  #'    If we choose to plot the output of the model, it returns a dataframe
+  #'    containing the position of the individuals on the transect as well as
+  #'    the allelic frequency along the transect
   
   # The first step is to get the end frequencies on a proportional scale for the
   # studied transect
@@ -133,24 +164,32 @@ clinef <- function(x, g=0, n=0, centre, width, left, right, optimisation=TRUE){
 }
 
 clineflog <-  function(x, g, n, centre, width, left, right){
+  #' Represent clinal distribution with log transformation
+  #' 
   #' This function estimates a sigmoid cline for allelic frequencies with a
   #' logarithmic transformation. Warning, by comparison with the other 
   #' optimisation functions, this one can not be used to plot the allelic frequency
   #' variations along the transect.
   #'
-  #' Arguments:
-  #'  x: vector of numeric positions of the individuals along the transect
-  #'  centre: numeric value indicating the center of the cline
-  #'  width: numeric value indicating the logarithm of the cline width
-  #'  left: numeric value of the logit allelic frequency on the left part of the transect
-  #'  right: numeric value of the logit allelic frequency on the right part of the transect
-  #'           (the optimisation of parameters works best if p_left < p_right)
-  #'  g: vector of genotype values for each individual along the transect
-  #'  n: numeric value telling which maximal genetic value can be reached (1 or 2)
-  #' 
-  #' Returns
-  #'  minusll: This is opposite of the likelihood of the used parameters
-  #'           to explain the observed genotypes
+  #'@param x (numeric vector).
+  #'    Positions of the individuals along the transect
+  #'@param centre (numeric value).
+  #'    Center of the cline
+  #'@param width (numeric value).
+  #'    Logarithm of the width of the cline
+  #'@param left (numeric value). 
+  #'    Logit allelic frequency on the left part of the transect.
+  #'@param right (numeric value). 
+  #'    Logit allelic frequency on the right part of the transect.
+  #'@param g (numeric vector)
+  #'    Genotype values for each individual along the transect
+  #'@param n (numeric value)
+  #'    Maximal genetic value can be reached (1 or 2)
+  #'    
+  #'@returns (numeric value)
+  #'    This is opposite of the likelihood of the used parameters to explain the
+  #'    observed genotypes. Warning: the optimisation of parameters works best
+  #'    if p_left < p_right
   
   # First, we transform the values of the width and the allelic frequencies
   wi <- exp(width)
@@ -172,30 +211,41 @@ clineflog <-  function(x, g, n, centre, width, left, right){
 ####################### 2. Phenotypic cline  ###################################
 ################################################################################
 cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisation=TRUE){
+  #' Represent phenotypic cline
+  #' 
   #' This function estimates a sigmoid cline for phenotypic variations
   #'
-  #' Arguments:
-  #'  x: vector of numeric positions of the individuals along the transect
-  #'  centre: numeric value indicating the center of the cline
-  #'  width: numeric value indicating the width of the cline
-  #'  left: numeric value of the phenotypic trait on the left part of the transect
-  #'  right: numeric value of the phenotypic trait on the right part of the transect
-  #'           (the optimisation of parameters works best if p_left < p_right)
-  #'  sl: numeric value representing the standard deviation on the left phenotypic trait value
-  #'  sc: numeric value representing the standard deviation on the center of the cline
-  #'  sr: numeric value representing the standard deviation on the right phenotypic trait value
-  #'  n: numeric value telling which maximal genetic value can be reached (1 or 2)
-  #'  optimisation: boolean allowing the function to know if it is used in an optimisation
-  #'    phase (default) or if it is used to plot the results. To plot the results of this
-  #'    model, simply change the value of the optimisation to FALSE
+  #'@param x (numeric vector).
+  #'    Positions of the individuals along the transect
+  #'@param centre (numeric value).
+  #'    Center of the cline
+  #'@param width (numeric value).
+  #'    Width of the cline
+  #'@param left (numeric value)
+  #'    Phenotypic trait value on the left part of the transect
+  #'@param right (numeric value)
+  #'    Phenotypic trait value on the right part of the transect
+  #'@param sl (numeric value).
+  #'    Standard deviation on the left phenotypic trait value
+  #'@param sc (numeric value).
+  #'    Standard deviation on the center of the cline
+  #'@param sr (numeric value).
+  #'    Standard deviation on the right phenotypic trait value
+  #'@param n (numeric value).
+  #'    Maximal genetic value can be reached (1 or 2)
+  #'@param optimisation (boolean).
+  #'    This argument allows the function to know if it is used in an optimisation
+  #'    phase (default) or if it is used to plot the results. To plot the
+  #'    results of this model, simply change the value of the optimisation to FALSE
   #' 
-  #' Returns
-  #'  minusll: (default return) This is opposite of the likelihood of the used parameters
-  #'           to explain the observed genotypes
-  #'  phen_cline: dataframe. If we choose to plot the output of the model, it returns
-  #'           a dataframe containing the position of the individuals on the transect,
-  #'           the allelic frequency along the transect and the standard deviation of
-  #'           the phenotypic cline
+  #'@returns minusll (numeric value). (default return)
+  #'    This is opposite of the likelihood of the used parameters to explain the
+  #'    observed genotypes
+  #'@returns phen_cline (dataframe).
+  #'    If we choose to plot the output of the model, it returns a dataframe
+  #'    containing the position of the individuals on the transect, the allelic
+  #'    frequency along the transect and the standard deviation of the 
+  #'    phenotypic cline
   
   # The first step is to calculte the natural width of the cline: d
   d <- position - centre
@@ -223,6 +273,12 @@ cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisa
   }
 }
 
+################################################################################
+#################### 3. Create documentation for functions  ####################
+################################################################################
+list_functions <- c("stable", "linear", "clinef", "clineflog", "cline_phen")
+for (func in list_functions){
+  docstring(func)
+}
 
-
-
+rm(list_functions, func)
