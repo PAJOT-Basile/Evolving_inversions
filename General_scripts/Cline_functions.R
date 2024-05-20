@@ -3,6 +3,10 @@
 # likelihood optimization.
 # It is separated into two parts with in each, some functions to be used
 
+# Libraries
+#install.packages("anyLib")
+require("anyLib")
+anyLib("docstring")
 
 ################################################################################
 ################### 1. Genetic frequency variations  ###########################
