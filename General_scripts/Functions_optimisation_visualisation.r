@@ -1,9 +1,9 @@
 # Import libraries
 #install.packages("anyLib")
 require("anyLib")
-anyLib(c("tidyverse", "ggforce", "viridis", "ggnewscale", "LaplacesDemon", "tie", "bbmle", "zeallot"))
+anyLib(c("tidyverse", "ggforce", "viridis", "ggnewscale", "LaplacesDemon", "tie", "bbmle", "zeallot", "docstring"))
 
-# Import functions from the `Cline_functions.R` script (the path may need to be modified)
+# Import functions from the `Cline_functions.R` script
 source("./Cline_functions.R")
 
 ################################################################################
@@ -11,52 +11,56 @@ source("./Cline_functions.R")
 ################################################################################
 
 is_numeric_in_character <- function(x){
-  #' This function checks if there is a numeric value contained in a character
+  #' Checks for numerics
   #' 
-  #' Arguments:
-  #'    x: string, factor, vector.
-  #'      object to check
-  #' Returns:
-  #'    : bool
+  #' Checks if there is a numeric value contained in a character
+  #' 
+  #' @param x (string, factor, vector).
+  #'      Object to check. It can be a character, a factor, a vector or anything
+  #'      that can be converted to numeric.
+  #' @returns (bool).
   #'      If there is a numeric value in the input, it returns TRUE, it returns
   #'      FALSE otherwise
+  #' @export
   
   return(!is.na(x %>% as.numeric) %>% suppressWarnings)
 }
 
 is.continuous <- function(x){
-  #'This function checks if a variable is discrete or continuous. 
+  #' Checks for continuousity
+  #' 
+  #' This function checks if a variable is discrete or continuous. 
   #' Warning: here a variable is considered discrete if it contains less than 10
   #' distinct levels. This approximation is done to simplify the distinction 
   #' between continuous or discrete variables, but it is not a real classification
   #' 
-  #' Arguments:
-  #'    x: numeric vector
+  #' @param x (numeric vector).
   #'      A vector containing values to see if it is continuous or discrete
-  #' Returns:
-  #'    : bool.
+  #' @returns (bool).
   #'      This function returns TRUE if the variable is continuous (more than 10
   #'      levels) or FALSE if the variable is discrete (less than 10 levels)
+  #' @export
   
   return(length(unique(x)) >= 10)
 }
 
 "%!in%" <- function(x, y){
+  #' Not in
+  #' 
   #' This function is the opposite of the "%in%" function. It checks if the 
   #' values contained in input x are NOT contained in y.
   #' 
-  #' Arguments:
-  #'  x: vector
+  #'@param x (vector).
   #'    This input contains any type of object, as long as they are the same type
   #'    as the ones in the y vector
-  #'  y: vector
+  #'@param y (vector).
   #'    This input contains any type of object, as long as they are the same type
   #'    as the ones in the x vector
   #'    
-  #' Returns:
-  #'  : bool
+  #'@returns (bool)
   #'    This function returns TRUE for each value of x that is NOT in y and FALSE
   #'    for every value of x that is in y.
+  #' @export
   
   return(!(x %in% y))
   }
@@ -66,20 +70,21 @@ is.continuous <- function(x){
 ################################################################################
 
 transform_position_ade2tidy <- function(df){
+  #' Transform adegenet format to tidy format
+  #' 
   #' The position of each SNP in the adegenet format is as follows: 
   #' "CHROMOSOME_SNPposition.allele". 
   #' This function transforms the position column from the previous format into
   #' Two columns containing the chromosome in one column and the numeric 
   #' position in the other column.
   #' 
-  #' Arguments:
-  #'  df: data.frame
-  #'    The dataframe containing the position column to transform
+  #'@param df (data.frame).
+  #'    The dataframe containing the position column to transform.
   #'  
-  #' Returns:
-  #'  df: data.frame
+  #'@returns (data.frame).
   #'    This function returns the input dataframe with two separate chromosome and
-  #'    position columns
+  #'    position columns.
+  #' @export
 
   df %>%
     # First, we remove the allele at the end of the adegenet position
@@ -94,22 +99,23 @@ transform_position_ade2tidy <- function(df){
 }
 
 select_good_SNPs <- function(df, colName){
+  #' Selects good SNPs
+  #' 
   #' This function selects the allele version of SNPs that have a given value 
   #' greater or equal to 0 and if this condition is not sufficient to select one
   #' allele, it picks the first one in the table.
   #' 
-  #' Arguments:
-  #'  df: data.frame
+  #'@param df (data.frame).
   #'    Dataframe containing a column called "Position" that can be duplicated 
   #'    and a column that is given to be filtered.
-  #'  colName: symbol or string
+  #'@param colName (symbol or string).
   #'    It is the name of a column that is given to be filtered on. All the values
   #'    of this column that are greater or equal to 0 will be kept.
   #' 
-  #' Results:
-  #'  : data.frame
+  #'@returns (data.frame).
   #'    This dataframe contains only alleles of the first dataframe that have
   #'    values greater or equal to 0 in the selected column
+  #' @export
   
   # First, we convert the name of the column to a name that we can use as column
   # name in the tidyverse
@@ -134,21 +140,22 @@ select_good_SNPs <- function(df, colName){
 }
 
 select_clinal_SNPs <- function(df){
+  #' Select clinal SNPs
+  #' 
   #' This function selects only clinal SNPs in at least one location. It requires
   #' that the input to have a "Position" and a "Model_to_select" column
   #' 
-  #' Arguments:
-  #'  df: data.frame
+  #'@param df (data.frame).
   #'    This dataframe must contain two columns at least with the "Position" and
   #'    the "Model_to_select" column. The "Position" column contains the position
   #'    of the SNP on the Genome. The "Model_to_select" column must contain the
   #'    name of the model to select: one of "Clinal", "Stable" or "Linear".
   #' 
-  #' Results:
-  #'  : data.frame
+  #'@returns (data.frame).
   #'    This dataframe contains all the SNPs that have at least one clinal model.
   #'    If the SNP is present several times in the dataframe, it will select all
   #'    the lines containing said SNP if at least one model is clinal.
+  #' @export
 
   # We iterate over each unique SNP position in the dataframe
   for (position_i in df$Position %>% unique){
@@ -175,25 +182,26 @@ select_clinal_SNPs <- function(df){
 ################################################################################
 
 get_genotype_transect <- function(genetic_data, SNP_subset = NULL, meta_data = metadata){
+  #' Get genotypes along transect
+  #' 
   #' This function uses an adegenet object and returns the genotype of all or
   #' part of the SNPs.
   #' 
-  #' Arguments:
-  #'  genetic_data: Genind object 
+  #'@param genetic_data (Genind object). 
   #'    It containing the SNPs from which to get the genotype
-  #'  SNP_subset: data.frame (default = NULL)
+  #'@param SNP_subset (data.frame). (default = NULL)
   #'    This data frame contains columns "Position" and/or "SNP_name". If it is
   #'    given, it will only return the genotype from these SNPs. If this data
   #'    frame is used, it is required to have a column called "SNP_name".
-  #'  meta_data: data.frame
+  #'@param meta_data (data.frame).
   #'    This dataframe contains metadata on the individuals (for example the
   #'    position on the transect, the color, ...)
   #' 
-  #' Returns:
-  #'  : data.frame
+  #'@returns (data.frame).
   #'    This data frame contains the genotypes for both alleles of the selected
   #'    SNPs as well as some metadata on the individuals (position along the 
   #'    transect)
+  #' @export
   
   # If the SNP subset is not selected, do this
   if (SNP_subset %>% is.null){
@@ -246,41 +254,42 @@ get_genotype_transect <- function(genetic_data, SNP_subset = NULL, meta_data = m
 }
 
 get_extreme_genotypes <- function(genetic_data, SNP_subset = NULL, Extreme_values = NULL, var = NULL, nb_extreme_indivs = 30, nb_indivs_to_keep = 20, meta_data = metadata){
+  #' Get extreme genotypes
+  #' 
   #' This function is used to get the genotypes of the individuals located on the
   #' extreme ends of the transect. If the selected individuals do not have the 
   #' right genotype, we can also use a supplementary dataset to re-filter the 
   #' individuals to select ones with more differences.
   #' 
-  #' Arguments:
-  #'  genetic_data: Genind object 
+  #'@param genetic_data (Genind object). 
   #'    It containing the SNPs from which to get the genotype
-  #'  SNP_subset: data.frame (default = NULL)
+  #'@param SNP_subset (data.frame). (default = NULL)
   #'    This data frame contains columns "Position" and/or "SNP_name". If it is
   #'    given, it will only return the genotype from these SNPs. If this data
   #'    frame is used, it is required to have a column called "SNP_name".
-  #'  Extreme_values: data.frame (default = NULL)
+  #'@param Extreme_values (data.frame). (default = NULL)
   #'    This data frame contains the values to use to re-filter the selected
   #'    individuals. This variable works in combination with the next one.
-  #'  var: string (default = NULL)
+  #'@param var (string). (default = NULL)
   #'    This string is the name of the column from Extreme_values to use to 
   #'    refilter the individuals.
-  #'  nb_extreme_indivs: integer (default = 30)
+  #'@param nb_extreme_indivs (integer). (default = 30)
   #'    This number is the number of individuals to sample in the first samping
   #'    process (position on the transect).
-  #'  nb_indivs_to_keep: integer (default = 20)
+  #'@param nb_indivs_to_keep (integer). (default = 20)
   #'    This number is the number of individuals to re-select in the
   #'    nb_extreme_indivs using the Extreme_values dataset. It must therefore be
   #'    smaller than the number indicated by nb_extreme_indivs
-  #'  meta_data: data.frame
+  #'@param meta_data (data.frame).
   #'    This dataframe contains metadata on the individuals (for example the
   #'    position on the transect, the color, ...)
   #'    
-  #' Results:
-  #'  :list of 4 data.frames
+  #'@returns (list of 4 data.frames).
   #'    This list contains 4 dataframes corresponding to the 4 groups of individuals
   #'    (the two extremes of each transect). Each data frame contains the 
   #'    genotypes of the selected individuals.
-
+  #' @export
+  
   # First, we have to get the genotype of the considered SNPs on the whole transect
   genotype_transect <- get_genotype_transect(genetic_data = genetic_data,
                                              SNP_subset = SNP_subset,
@@ -389,40 +398,41 @@ get_extreme_genotypes <- function(genetic_data, SNP_subset = NULL, Extreme_value
 }
 
 get_allelic_frequencies <- function(genetic_data, SNP_subset = NULL, Extreme_values = NULL, var = NULL, nb_extreme_indivs = 30, nb_indivs_to_keep = 20, meta_data = metadata){
+  #' Calculte allelic frequencies from adegenet objects
+  #' 
   #' This function is used to calculate the allelic frequencies of the obtained
   #' genotypes for each extreme of each transect
   #' 
-  #' Arguments:
-  #'  genetic_data: Genind object 
+  #'@param genetic_data (Genind object). 
   #'    It containing the SNPs from which to get the genotype
-  #'  SNP_subset: data.frame (default = NULL)
+  #'@param SNP_subset (data.frame). (default = NULL)
   #'    This data frame contains columns "Position" and/or "SNP_name". If it is
   #'    given, it will only return the genotype from these SNPs. If this data
   #'    frame is used, it is required to have a column called "SNP_name".
-  #'  Extreme_values: data.frame (default = NULL)
+  #'@param Extreme_values (data.frame). (default = NULL)
   #'    This data frame contains the values to use to re-filter the selected
   #'    individuals. This variable works in combination with the next one.
-  #'  var: string (default = NULL)
+  #'@param var (string). (default = NULL)
   #'    This string is the name of the column from Extreme_values to use to 
   #'    refilter the individuals.
-  #'  nb_extreme_indivs: integer (default = 30)
+  #'@param nb_extreme_indivs (integer). (default = 30)
   #'    This number is the number of individuals to sample in the first samping
   #'    process (position on the transect).
-  #'  nb_indivs_to_keep: integer (default = 20)
+  #'@param nb_indivs_to_keep (integer). (default = 20)
   #'    This number is the number of individuals to re-select in the
   #'    nb_extreme_indivs using the Extreme_values dataset. It must therefore be
   #'    smaller than the number indicated by nb_extreme_indivs
-  #'  meta_data: data.frame
+  #'@param meta_data (data.frame).
   #'    This dataframe contains metadata on the individuals (for example the
   #'    position on the transect, the color, ...)
   #'    
-  #' Results:
-  #'  : data.frame
+  #'@returns (data.frame).
   #'      This data frame contains the allelic frequencies of the exposed and
   #'      sheltered parts of the transect for both populations. Each row is a SNP
   #'      and for each one, is given the population (here Sweden or France),
   #'      the allelic frequency in the sheltered and in the exposed part of the 
   #'      transect.
+  #' @export
   
   # First, we get the genotypes of extreme individuals in the transect
   genotypes <- get_extreme_genotypes(genetic_data = genetic_data, 
@@ -490,58 +500,61 @@ get_allelic_frequencies <- function(genetic_data, SNP_subset = NULL, Extreme_val
 }
 
 Calculate_allelic_frequency <- function(genotype){
+  #' Calculate allelic frequency from a genotype
+  #' 
   #' This function calculates the allelic frequency of one allele in a population
   #' using the genotype of this allele in the population.
   #' 
-  #' Arguments:
-  #'  genotype: vector of numbers
+  #'@param genotype (vector of numbers).
   #'    This vector contains genotype values for all the individuals in the
   #'    population. It can contain missing values
   #'  
-  #' Returns:
-  #'  : numeric value
+  #'@returns (numeric value)
   #'    This value is the allelic frequency of the considered allele in the 
   #'    population.
+  #' @export
+  
   (sum(genotype, na.rm = TRUE) / ((length(genotype) - (is.na(genotype) %>% sum(na.rm = TRUE))) * 2)) %>% 
     return()
 }
 
 get_delta_freqs_and_F4 <- function(genetic_data, SNP_subset = NULL, Extreme_values = NULL, var = NULL, nb_extreme_indivs = 30, nb_indivs_to_keep = 20, meta_data = metadata){
+  #' Calculates Delat frequencies and F4
+  #' 
   #' This function is used to calculate the differences in allelic frequencies
   #' between both ends of a transect. It also calculates the F4 statistic between
   #' two populations (the multiplication of differences in allelic frequencies).
   #' 
-  #' Arguments:
-  #'  genetic_data: Genind object 
+  #'@param genetic_data (Genind object). 
   #'    It containing the SNPs from which to get the genotype
-  #'  SNP_subset: data.frame (default = NULL)
+  #'@param SNP_subset (data.frame). (default = NULL)
   #'    This data frame contains columns "Position" and/or "SNP_name". If it is
   #'    given, it will only return the genotype from these SNPs. If this data
   #'    frame is used, it is required to have a column called "SNP_name".
-  #'  Extreme_values: data.frame (default = NULL)
+  #'@param Extreme_values (data.frame). (default = NULL)
   #'    This data frame contains the values to use to re-filter the selected
   #'    individuals. This variable works in combination with the next one.
-  #'  var: string (default = NULL)
+  #'@param var (string). (default = NULL)
   #'    This string is the name of the column from Extreme_values to use to 
   #'    refilter the individuals.
-  #'  nb_extreme_indivs: integer (default = 30)
+  #'@param nb_extreme_indivs (integer). (default = 30)
   #'    This number is the number of individuals to sample in the first samping
   #'    process (position on the transect).
-  #'  nb_indivs_to_keep: integer (default = 20)
+  #'@param nb_indivs_to_keep (integer). (default = 20)
   #'    This number is the number of individuals to re-select in the
   #'    nb_extreme_indivs using the Extreme_values dataset. It must therefore be
   #'    smaller than the number indicated by nb_extreme_indivs
-  #'  meta_data: data.frame
+  #'@param meta_data (data.frame).
   #'    This dataframe contains metadata on the individuals (for example the
   #'    position on the transect, the color, ...)
   #'    
-  #' Results:
-  #'  : data.frame
+  #'@returns (data.frame).
   #'      This data frame contains the allelic frequencies of the exposed and
   #'      sheltered parts of the transect for both populations. Each row is a SNP
   #'      and for each one is given the difference in allelic frequency between 
   #'      the exposed and the sheltered part of the transect in both populations,
   #'      and the F4 statistic.
+  #' @export
   
   # First, we need the allelic frequencies of the SNPs on both ends of the transect
   get_allelic_frequencies(genetic_data = genetic_data,
@@ -562,34 +575,36 @@ get_delta_freqs_and_F4 <- function(genetic_data, SNP_subset = NULL, Extreme_valu
 }
 
 get_extreme_values <- function(df, condition, slice = FALSE, threshold = NULL){
+  #' Get extreme values from a dataframe
+  #' 
   #' This function is used to get the extreme values of a data frame with a
   #' specific condition and return a table containing the "Position" and "SNP_name"
   #' columns that can be used in the previous allelic frequency functions.
   #' 
-  #' Arguments:
-  #'  df: data.frame
+  #'@param df (data.frame).
   #'    This data frame is the data frame to filter, from which to extract
   #'    extreme values
-  #'  condition: string
+  #'@param condition (string).
   #'    This string contains the condition to get the extreme values. For example
   #'    you could use '"Comp2 > 0"'. This would filter the values of column Comp2
   #'    to be greater than 0.
-  #'  slice: boolean (default = FALSE)
+  #'@param slice (boolean). (default = FALSE)
   #'    This indicates if there is a need to get only the first n values of the
   #'    filtered data frame. If TRUE, the threshold argument is required and it
   #'    will keep only these values. If FALSE, it will simply filter.
-  #'  threshold: integer (default = NULL)
+  #'@param threshold (integer). (default = NULL)
   #'    This argument works in combination with the slice argument. It indicates
   #'    how many maximum values you need to keep in the final data frame.
-  #' Returns:
-  #'  : data.frame
+  #' 
+  #'@returns (data.frame).
   #'    This data frame contains the values that validate the given condition 
   #'    (and the most extreme values of the input data frame.)
   #'    
-  #' Warning:
+  #'  Warning:
   #'  This function is not very replicable. It only works with some cases. It
   #'  could be perfected with more time and more rigor.
-
+  #' @export
+  
   # First, we consider wether the order in which the condition wants us to
   # filter the data
   var <- (condition %>% str_split_fixed(., " ", 3))[, 1]
@@ -637,26 +652,27 @@ get_extreme_values <- function(df, condition, slice = FALSE, threshold = NULL){
 ################################################################################
 
 geom_box_background <- function(To_plot_manhat, colName, chromosome_centers){
+  #' Make polygon delimitations for geom_polygon
+  #' 
   #' This function creates a data frame that contains the polygon delimitations
   #' if it is required to separate chromosomes by using boxes in the visual
   #' representations
   #' 
-  #' Arguments:
-  #'  To_plot_manhat: data.frame
+  #'@param To_plot_manhat (data.frame).
   #'    This data frame contains the data on the plotting of the values in a 
   #'    manhattan plot. 
-  #'  colName: string or name
+  #'@param colName (string or name).
   #'    This argument is the name of the column in "To_plot_manhat" that we want
   #'    to plot.
-  #'  chromosomes_centers: data.frame
+  #'@param chromosomes_centers (data.frame).
   #'    This data frame contains information on the chromosomes: their name and
   #'    the position of their center is the minimum required for this function to
   #'    work.
   #'    
-  #' Returns:
-  #'  boxes: data.frame
+  #'@returns (data.frame)
   #'    This data frame contains the information on delimitations of the polygons
   #'    (position of the angles on the x and y axis). 
+  #' @export
   
   # First, we transform the colName to use it with tidyverse
   colName <- as.character(colName)
@@ -715,41 +731,42 @@ geom_box_background <- function(To_plot_manhat, colName, chromosome_centers){
 }
 
 geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, palette = c("grey71","orange2"), ...){
+  #' Draw manhattan plot
+  #' 
   #' This function traces a manhattan plot relying on the ggplot2 aesthetics.
   #' Some additional arguments have been added to be able to personalise the plots
   #' to the best.
   #' 
-  #' Arguments:
-  #'  df: data.frame
+  #'@param df (data.frame).
   #'    This data frame contains the information to plot. It requires at least
   #'    two columns: the position in the genome and the column to plot along the
   #'    genome.
-  #'  mapping: mapping object
+  #'@param mapping (mapping object).
   #'    This is the mapping of the graph just like in the ggplot2 library. The
   #'    mapping in this function does not require an x column because the position
   #'    along the genome is taken by default.
-  #'  thresholding: boolean (default = FALSE)
+  #'@param thresholding (boolean). (default = FALSE)
   #'    This is an argument that changes the output of the function. It outputs
   #'    the graph and a maximum cumulative position along the whole genome. It is
   #'    to be used with the "thresholds_manhattan" function.
-  #'  absolute: boolean (default = TRUE)
+  #'@param absolute (boolean). (default = TRUE)
   #'    This arguments simply says if you want to plot the absolute values in the
   #'    selected column or if you plot the real value
-  #'  palette: vector (default = c("grey71", "orange2"))
+  #'@param palette (vector). (default = c("grey71", "orange2"))
   #'    This argument is the color palette to use to distinguish between the 
   #'    successive chromosomes. Warning: this function has been made to deal only 
   #'    with two-colored palettes.
-  #'  ...
+  #'@param ...
   #'    In these arguments, you can add any arguments that you would give a 
   #'    ggplot2 graph outside of the aesthetics.
   #'    
-  #' Returns:
-  #'  p: ggplot2 object
+  #'@returns (ggplot2 object)
   #'    This returns the manhattan plot of the required column values along the
   #'    genome
-  #'  : numeric value
+  #'@returns (numeric value)
   #'    If the "thresholding" argument is TRUE, then this function also returns
   #'    the maximum cumulative position in the whole genome.
+  #' @export
   
   # First, we added some error checking to keep the function from running for
   # nothing
@@ -1028,36 +1045,37 @@ geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, p
 }
 
 thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL, ...){
+  #' Draw threshold(s) on a manhattan plot
+  #' 
   #' This function re-uses the geom_manhattan function to get a manhattan plot
   #' and it adds threshold values to it (usually represented by horizontal lines)
   #' 
-  #' Arguments:
-  #'  df: data.frame
+  #'@param df (data.frame).
   #'    This data frame contains the information to plot. It requires at least
   #'    two columns: the position in the genome and the column to plot along the
   #'    genome.
-  #'  mapping: mapping object
+  #'@param mapping (mapping object).
   #'    This is the mapping of the graph just like in the ggplot2 library. The
   #'    mapping in this function does not require an x column because the position
   #'    along the genome is taken by default.
-  #'  percentages: numeric value or vector of numeric values (default = NULL)
+  #'@param percentages (numeric value or vector of numeric values). (default = NULL)
   #'    This contains values between 0 and 1. It will show the given percentages
   #'    of extreme values on the manhattan plot: if we want 20%, a line will 
   #'    appear on the plot showing where the cut of the 20% of highest values 
   #'    are. If this argument is used, do not use the values argument.
-  #'  values: numeric value or vector of numeric values (default = NULL)
+  #'@param values (numeric value or vector of numeric values). (default = NULL)
   #'    This contains numeric values in the range of values in the plot. It will
   #'    show the given values on the manhattan plot: if we want a cutoff value at
   #'    5, a vertical line will appear on the y axis at the value of 5.
   #'    If this argument is used, do not use the percentages argument.
-  #'  ...:
+  #'@param ...
   #'    supplementary arguments to pass to the geom_manhattan function
   #'    
-  #' Returns:
-  #'  : ggplot2 object
+  #'@returns (ggplot2 object).
   #'    It will return the same plot as the geom_manhattan function, except some
   #'    vertical lines will have appeared at the given values or percentages.
-
+  #' @export
+  
   # First, we make a security to be sure that some cutoff values are given.
   if (is_null(percentages) & is_null(values)){
     stop("At least one percentage or value threshold should be given")
@@ -1140,30 +1158,31 @@ thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL,
 ################################################################################
 
 optimise_clines <- function(Priors, logarithm = FALSE, ...){
+  #' Optimise cline models
+  #' 
   #' This function is made to optimise the best of three models (stable, linear
   #' and clinal) along a transect. It gives the best optimised parameters for
   #' all three models as well as the AIC of each model and which is better to use
   #' 
-  #' Arguments:
-  #'  Priors: data.frame
+  #'@param Priors (data.frame).
   #'    This data frame contains the prior values of the parameters to optimise.
   #'    This data frame has to contain at least a "Population" and "Position" 
   #'    column as well as some columns with the allelic frequencies on both ends
   #'    of the transect, the center of a cline and the width of the cline.
-  #'  logarithm: boolean (default = FALSE)
+  #'@param logarithm (boolean). (default = FALSE)
   #'    This arguemnt is used to know if the optimisation process should be done
   #'    using logarithm transformations for the cline model fitting (TRUE) or 
   #'    not (FALSE)
-  #'  ...:
+  #'@param ...
   #'    Supplementary arguments to pass to the get_gentoype_transect function.
   #'    See this function to know which arguments to use.
   #' 
-  #' Returns:
-  #'  : data.frame
+  #'@returns data.frame
   #'    This data frame contains the optimised values of the three models for 
   #'    each position in the input data frame. It also tests the models on their
   #'    AIC and selects the best model to use to represent it.
-
+  #' @export
+  
   # First, we need to get the genotypes of the individuals along the transect to
   # optimise and test the models. It is recommended to use a subset of SNPs as 
   # this function runs for a long time
@@ -1523,35 +1542,36 @@ optimise_clines <- function(Priors, logarithm = FALSE, ...){
 }
 
 plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = FALSE, ...){
+  #' Makes information for the cline plotting
+  #' 
   #' This function gives a data frame containing all the information to plot the
   #' best distribution of allelic frequencies along the transect using three 
   #' models: stable, linear and clinal. 
   #' 
-  #' Arguments:
-  #'  cline_params: data.frame
+  #'@param cline_params (data.frame).
   #'    This data frame contains the parameters that came out of the "optimise_clines"
   #'    function containing the parameters of the optimised model parameters.
-  #'  real_distance: boolean (default = FALSE)
+  #'@param real_distance (boolean). (default = FALSE)
   #'    This arguemnt is used to know if the graphic representation should use the
   #'    real position of the individuals along the transect rather than smoothing
   #'    the positions. This argument should be TRUE when the "goodness_of_fit"
   #'    argument is TRUE.
-  #'  goodness_of_fit: boolean (default = FALSE)
+  #'@param goodness_of_fit (boolean). (default = FALSE)
   #'    This argument indicates if it should return the goodness of fit of the 
   #'    plotted model as well as the plotting data for the distributions of 
   #'    allelic frequencies along the transect. This argument should be used with
   #'    the "real_distance" argument set to TRUE.
-  #'  ...:
+  #'@param ...
   #'    Supplementary arguments to pass to the "get_gentoype_transect" function.
   #'    See this function to know which arguments to use.
   #' 
-  #' Returns:
-  #'  : data.frame
+  #'@returns (data.frame).
   #'    This data frame contains the parameters to plot the best distribution of 
   #'    allelic frequencies along the transect between three models. If the 
   #'    "goodness_of_fit" argument is also given, then it should return a list
   #'    of two data frames. The first one containing the goodness of fit of the 
   #'    plotted models and then the plotting information.
+  #' @export
   
   # First, we need to get the genotypes of the individuals along the transect to
   # optimise and test the models. It is recommended to use a subset of SNPs as 
@@ -1772,6 +1792,27 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
     return(Cline_return)
   }
 }
+
+
+
+################################################################################
+################### 6. Create docstring for all functions   ####################
+################################################################################
+list_functions <- c("stable", "linear", "clinef", "clineflog", "cline_phen",
+                    "is_numeric_in_character", "is.continuous", "%!in%",
+                    "transform_position_ade2tidy", "select_good_SNPs",
+                    "select_clinal_SNPs", "get_genotype_transect",
+                    "get_extreme_genotypes", "get_allelic_frequencies",
+                    "Calculate_allelic_frequency", "get_delta_freqs_and_F4",
+                    "get_extreme_values",
+                    "geom_box_background", "geom_manhattan",
+                    "thresholds_manhattan", "optimise_clines", "plot_clines")
+for (func in list_functions){
+  docstring(func)
+}
+
+rm(func, list_functions)
+
 
 print("finished importation")
 
