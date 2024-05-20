@@ -25,7 +25,7 @@ size_palette = c("#4e79a7", "grey75", "#f28e2b")
 
 
 ################################ Import metadata ################################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
