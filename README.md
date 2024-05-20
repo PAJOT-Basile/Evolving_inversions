@@ -1,7 +1,7 @@
 # Parallelism in ecotype differenciation between two hybrid zones of _Littorina fabalis_
 
 
-This directory contains all the scripts allowing to replicate analysis showing parallelism in ecotype differenciation between two ecotypes of _Littorina fabalis_ in two locations: Sweden and France. As the Swedish population was already studied in a [previous paper](https://academic.oup.com/evlett/advance-article/doi/10.1093/evlett/qrae014/7656805), this population is taken as a reference and always presented first.
+This directory contains all the scripts allowing to replicate analysis showing parallelism in ecotype differenciation between two ecotypes of _Littorina fabalis_ in two locations: Sweden and France. As the Swedish population was already studied in a previous paper [(Le Moan et al, 2024)](https://academic.oup.com/evlett/advance-article/doi/10.1093/evlett/qrae014/7656805), this population is taken as a reference and always presented first.
 This directory is composed of 4 folders.
 
 
