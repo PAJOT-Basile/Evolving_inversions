@@ -21,6 +21,9 @@ shell_palette = c("black", "grey28", "brown", "saddlebrown", "wheat4", "gold", "
 # Color palette to be reused everywhere with the shell size
 size_palette = c("#4e79a7", "grey75", "#f28e2b")
 
+# Basic theme to use in the graphs
+my_theme <- theme_bw() +
+  theme(text = element_text(size = 20))
 
 ################################ Import metadata ################################
 metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
