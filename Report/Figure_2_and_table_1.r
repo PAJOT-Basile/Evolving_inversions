@@ -3,8 +3,6 @@ require("anyLib")
 anyLib(c("tidyverse", "readxl", "ggh4x", "bbmle", "tie", "ggforce", "ggpubr", "ggnewscale", "LaplacesDemon"))
 
 ################################ Useful functions ################################
-"%!in%" <- function(x, y){!("%in%"(x, y))}
-
 zip <- function(...){
   mapply(list, ..., SIMPLIFY=FALSE)
 }
