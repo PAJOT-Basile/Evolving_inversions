@@ -8,7 +8,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
