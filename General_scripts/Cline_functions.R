@@ -7,7 +7,6 @@
 #install.packages("anyLib")
 require("anyLib")
 anyLib("docstring")
-
 ################################################################################
 ################### 1. Genetic frequency variations  ###########################
 ################################################################################
@@ -37,6 +36,7 @@ stable <- function(x, p_all, g=0, n=0, optimisation = TRUE){
   #'    If we choose to plot the output of the model, it returns a dataframe
   #'    containing the position of the individuals on the transect as well as
   #'    the allelic frequency along the transect
+  #' @export
   
   
   fx <- p_all 
@@ -78,12 +78,15 @@ linear <- function(x, p_left, p_right, g=0, n=0, optimisation=TRUE){
   #' 
   #'@returns (numeric value).(default return)
   #'    This is opposite of the likelihood of the used parameters to explain the
-  #'    observed genotypes. Warning: the optimisation of parameters works best
-  #'    if p_left < p_right
+  #'    observed genotypes. 
   #'@returns (dataframe.)
   #'    If we choose to plot the output of the model, it returns a dataframe
   #'    containing the position of the individuals on the transect as well as
   #'    the allelic frequency along the transect
+  #' @section Warning:
+  #'   The optimisation of parameters for this function works best if
+  #'    p_left < p_right
+  #' @export
   
   fx <- p_left + (p_right - p_left) * (x - min(x)) / (max(x) - min(x))
   # If the optimization argument is set to true (default), the calculation of 
@@ -129,12 +132,15 @@ clinef <- function(x, g=0, n=0, centre, width, left, right, optimisation=TRUE){
   #' 
   #'@returns (numeric value).(default return)
   #'    This is opposite of the likelihood of the used parameters to explain the
-  #'    observed genotypes. Warning: the optimisation of parameters works best
-  #'    if p_left < p_right
+  #'    observed genotypes.
   #'@returns (dataframe.)
   #'    If we choose to plot the output of the model, it returns a dataframe
   #'    containing the position of the individuals on the transect as well as
   #'    the allelic frequency along the transect
+  #' @section Warning:
+  #'   The optimisation of parameters for this function works best if
+  #'    p_left < p_right
+  #' @export
   
   # The first step is to get the end frequencies on a proportional scale for the
   # studied transect
@@ -188,8 +194,11 @@ clineflog <-  function(x, g, n, centre, width, left, right){
   #'    
   #'@returns (numeric value)
   #'    This is opposite of the likelihood of the used parameters to explain the
-  #'    observed genotypes. Warning: the optimisation of parameters works best
-  #'    if p_left < p_right
+  #'    observed genotypes. 
+  #'@section Warning:
+  #'    The optimisation of parameters for this function works best if 
+  #'    p_left < p_right
+  #'@export
   
   # First, we transform the values of the width and the allelic frequencies
   wi <- exp(width)
@@ -246,6 +255,9 @@ cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisa
   #'    containing the position of the individuals on the transect, the allelic
   #'    frequency along the transect and the standard deviation of the 
   #'    phenotypic cline
+  #'@section Warning:
+  #'    This function is best optimised if left < right
+  #'@export
   
   # The first step is to calculte the natural width of the cline: d
   d <- position - centre
