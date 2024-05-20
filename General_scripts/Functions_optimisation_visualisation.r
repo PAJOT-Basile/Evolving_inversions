@@ -1795,25 +1795,6 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
 
 
 
-################################################################################
-################### 6. Create docstring for all functions   ####################
-################################################################################
-list_functions <- c("stable", "linear", "clinef", "clineflog", "cline_phen",
-                    "is_numeric_in_character", "is.continuous", "%!in%",
-                    "transform_position_ade2tidy", "select_good_SNPs",
-                    "select_clinal_SNPs", "get_genotype_transect",
-                    "get_extreme_genotypes", "get_allelic_frequencies",
-                    "Calculate_allelic_frequency", "get_delta_freqs_and_F4",
-                    "get_extreme_values",
-                    "geom_box_background", "geom_manhattan",
-                    "thresholds_manhattan", "optimise_clines", "plot_clines")
-for (func in list_functions){
-  docstring(func)
-}
-
-rm(func, list_functions)
-
-
 print("finished importation")
 
 
