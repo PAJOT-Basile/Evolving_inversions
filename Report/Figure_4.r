@@ -5,8 +5,6 @@ anyLib(c("tidyverse", "adegenet", "vcfR", "readxl", "statgenGWAS", "ggforce", "g
 
 
 ################## Useful functions  ##################
-"%!in%" <- function(x, y){!(x %in% y)}
-
 source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################################ Useful variables ################################
@@ -17,6 +15,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ################## Import the vcf file  ##################
+# The path to the vcf file has to be changed
 data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/filtering_vcf_files/Final_outputs/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
   vcfR2genind()
 
@@ -42,7 +41,7 @@ pca <- dudi.pca(X, scale=TRUE, nf=5, scannf=FALSE)
 
 rm(X)
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
