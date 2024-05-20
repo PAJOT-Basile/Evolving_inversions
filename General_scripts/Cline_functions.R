@@ -3,10 +3,6 @@
 # likelihood optimization.
 # It is separated into two parts with in each, some functions to be used
 
-# Libraries
-#install.packages("anyLib")
-require("anyLib")
-anyLib("docstring")
 
 ################################################################################
 ################### 1. Genetic frequency variations  ###########################
@@ -273,12 +269,3 @@ cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisa
   }
 }
 
-################################################################################
-#################### 3. Create documentation for functions  ####################
-################################################################################
-list_functions <- c("stable", "linear", "clinef", "clineflog", "cline_phen")
-for (func in list_functions){
-  docstring(func)
-}
-
-rm(list_functions, func)
