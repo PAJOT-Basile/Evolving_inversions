@@ -39,7 +39,7 @@ pca <- dudi.pca(X, scale=TRUE, nf=5, scannf=FALSE)
 
 rm(X)
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
