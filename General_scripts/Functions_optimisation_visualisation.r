@@ -1,6 +1,6 @@
 # Import libraries
 #install.packages("anyLib")
-require("anyLib")
+require("anyLib", lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/")
 anyLib(c("tidyverse", "ggforce", "viridis", "ggnewscale", "LaplacesDemon", "tie", "bbmle", "zeallot", "docstring"))
 
 # Import functions from the `Cline_functions.R` script
@@ -29,16 +29,17 @@ is_numeric_in_character <- function(x){
 is.continuous <- function(x){
   #' Checks for continuousity
   #' 
-  #' This function checks if a variable is discrete or continuous. 
-  #' Warning: here a variable is considered discrete if it contains less than 10
-  #' distinct levels. This approximation is done to simplify the distinction 
-  #' between continuous or discrete variables, but it is not a real classification
+  #' This function checks if a variable is discrete or continuous.
   #' 
   #' @param x (numeric vector).
   #'      A vector containing values to see if it is continuous or discrete
   #' @returns (bool).
   #'      This function returns TRUE if the variable is continuous (more than 10
   #'      levels) or FALSE if the variable is discrete (less than 10 levels)
+  #' @section Warning:
+  #' Here a variable is considered discrete if it contains less than 10
+  #' distinct levels. This approximation is done to simplify the distinction 
+  #' between continuous or discrete variables, but it is not a real classification
   #' @export
   
   return(length(unique(x)) >= 10)
@@ -63,7 +64,88 @@ is.continuous <- function(x){
   #' @export
   
   return(!(x %in% y))
+}
+
+add_table_to_df_in_iteration <- function(df1, df2){
+  #' Adds a data frame to another in an iteration
+  #' 
+  #' In an iteration, if we want to rbind a data frame to another, we have to 
+  #' check if the data frame is empty and if it is not, we can rbind the two
+  #' data frames together
+  #' 
+  #' @param df1 (data.frame).
+  #'    This data frame is the name of the data frame the data will be added to
+  #' @param df2 (data.frame).
+  #'    This data frame contains the data to add to the df1.
+  #'    
+  #' @returns (data.frame).
+  #'    This is the binding of the two data frames
+  #'
+  #' @export
+  
+  # First, we check if the first data frame exists. If if does not, we create the
+  # variable
+  #if (!exists(quote(df1), where = .GlobalEnv)){
+  #  # If the data frame does not exist, we have to transform it to match what we
+  #  # want
+  #  df1_name <- as.name(substitute(df1)) %>% as.character
+  #  # Then, we create an emtpty data fame
+  #  x <- data.frame()
+  #  assign(df1_name, x, pos = .GlobalEnv)
+  #}
+  
+  # Then, we have to check if the first data frame is empty
+  if (nrow(df1) == 0){
+    # If the first data frame is empty, we simply attribute the value of df2 to df1
+    df1 <- df2
+  }else{
+    # Otherwise we rbind the both of them
+    df1 <- df1 %>% 
+      rbind(df2)
   }
+  return(df1)
+}
+
+progress_bar <- function(iteration_number, nb_iterations_to_do){
+  #' Make a progress bar
+  #' 
+  #' This function allows to show a progress bar while a function with iterations
+  #' is running. It is used in a for loop. 
+  #' 
+  #' @param iteration_number (numeric value).
+  #'    This number indicates what iteration we are on
+  #' @param nb_iteration_to_do (numeric value). 
+  #'    This number indicates how many iterations are to be done.
+  #' 
+  #' @returns 
+  #'  This function does not return anything. It simply prints a progress bar 
+  #'  that is incremented for each iteration.
+  #' @export
+  
+  # We transform the iteration into a percentage to see the advance
+  percentage <- (iteration_number / nb_iterations_to_do * 100) %>% round(digits = 2)
+  # We separate this into to bars. A filed bar and an empty bar to complete the
+  # lines
+  charged_bar <- ""
+  empty_bar <- ""
+  # We make the percentage smaller to represent it on the screen
+  rep_perc <- (percentage/2) %>% round
+  # We simply separate the case where the bars have to be empty
+  if (rep_perc != 0){
+    # We fill the bars by iterating over them
+    for (j in 1:(rep_perc)){
+      charged_bar <- paste0(charged_bar, "█")
+    }
+  }
+  if (rep_perc != 50){
+    for (j in 1:((50-rep_perc) %>% round)){
+      empty_bar <- paste0(empty_bar, " ")
+    }
+  }
+  # And we print the output.
+  cat("\r", paste0(" | ", charged_bar, empty_bar, " | ", percentage, " % of positions "))
+  flush.console()
+}
 
 ################################################################################
 ############### 2. Functions for genomics with adegenet  #######################
@@ -162,7 +244,7 @@ select_clinal_SNPs <- function(df){
     # We count the number of rows for each SNP that use the "Clinal" model 
     is_clinal <- df %>% 
       filter(Position == position_i,
-             Model_to_select == "Clinal") %>% 
+             Best_model == "Clinal" & abs(Delta_AIC_second_best_model) > 4) %>% 
       nrow
     
     # If the SNP does not fit the clinal model, no rows will be found, so we 
@@ -203,54 +285,31 @@ get_genotype_transect <- function(genetic_data, SNP_subset = NULL, meta_data = m
   #'    transect)
   #' @export
   
+  # We select the table of genotypes for all SNPs along the whole genome
+  return_table <- genetic_data@tab %>%
+    # We transform this into a data frame to keep the name of the columns
+    as.data.frame %>% 
+    # We add a column to the table to get the name of the individuals
+    rownames_to_column("Sample_Name") %>% 
+    # We merge this with the metadata using the name of the individuals
+    inner_join(meta_data, by = "Sample_Name")
+  
   # If the SNP subset is not selected, do this
-  if (SNP_subset %>% is.null){
-    # We select the table of genotypes for all SNPs along the whole genome
-    genetic_data@tab %>%
-      # We transform this into a data frame to keep the name of the columns
-      as.data.frame %>% 
-      # We add a column to the table to get the name of the individuals
-      rownames_to_column("Sample_Name") %>% 
-      # We merge this with the metadata using the name of the individuals
-      inner_join(meta_data, by = "Sample_Name") %>% 
+  if ((SNP_subset %>% is.null) || ("Position" %!in% names(SNP_subset))){
+    return_table %>% 
       # We select the columns we need to keep (position along the transect, 
       # name of the individuals, the population they are from and all the 
       # genotypes)
       select(Sample_Name, LCmeanDist, Population, starts_with("LG")) %>%
       return()
-  
-    # If the SNP subset is given, we use it 
   }else{
-    # If there is no column called "Position" in the SNP_subset, we simply select
-    # all the alleles of the selected SNPs
-    if ("Position" %!in% names(SNP_subset)){
-      # We select the SNPs we want in the genind object
-      genetic_data[loc = SNP_subset$SNP_name]@tab %>% 
-        # We transform this into a data frame to keep the row names 
-        as.data.frame %>% 
-        # We add a column containing the names of the individuals
-        rownames_to_column("Sample_Name") %>% 
-        # We merge this to the metadata using the name of the individuals
-        inner_join(meta_data, by = "Sample_Name") %>% 
-        # We select the required columns
-        select(Sample_Name, LCmeanDist, Population, starts_with("LG")) %>% 
-        return()
-      
-    # If there is a column called "Position" in the dataframe, we use it to 
-    # select only the alleles of the SNPs we want to use
-    }else{
-      # The process is the same as in the previous cases
-      genetic_data[loc = SNP_subset$SNP_name]@tab %>% 
-        as.data.frame %>% 
-        rownames_to_column("Sample_Name") %>% 
-        inner_join(meta_data, by = "Sample_Name") %>% 
-        # The only difference is in the following line, we select the columns
-        # that contain the genotypes of only the alleles of the SNPs we want to
-        # keep
-        select(Sample_Name, LCmeanDist, Population, SNP_subset$Position %>% matches) %>% 
-        return()
+    return_table %>% 
+      # The only difference is in the following line, we select the columns
+      # that contain the genotypes of only the alleles of the SNPs we want to
+      # keep
+      select(Sample_Name, LCmeanDist, Population, SNP_subset$Position) %>% 
+      return()
     }
-  }
 }
 
 get_extreme_genotypes <- function(genetic_data, SNP_subset = NULL, Extreme_values = NULL, var = NULL, nb_extreme_indivs = 30, nb_indivs_to_keep = 20, meta_data = metadata){
@@ -600,7 +659,7 @@ get_extreme_values <- function(df, condition, slice = FALSE, threshold = NULL){
   #'    This data frame contains the values that validate the given condition 
   #'    (and the most extreme values of the input data frame.)
   #'    
-  #'  Warning:
+  #'@section Warning:
   #'  This function is not very replicable. It only works with some cases. It
   #'  could be perfected with more time and more rigor.
   #' @export
@@ -730,6 +789,7 @@ geom_box_background <- function(To_plot_manhat, colName, chromosome_centers){
   return(boxes)
 }
 
+#rm(df, mapping, thresholding, absolute, palette, mapping_ori, colName, to_select, i, To_plot, data_cum, To_plot_manhat, chromosome_centers, absolute_list, color_chromosome, p, function_to_call, list_default_parameters, default_param, param, color, boxes, color_polygon_chrom, list_defaults)
 geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, palette = c("grey71","orange2"), ...){
   #' Draw manhattan plot
   #' 
@@ -754,8 +814,7 @@ geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, p
   #'    selected column or if you plot the real value
   #'@param palette (vector). (default = c("grey71", "orange2"))
   #'    This argument is the color palette to use to distinguish between the 
-  #'    successive chromosomes. Warning: this function has been made to deal only 
-  #'    with two-colored palettes.
+  #'    successive chromosomes. 
   #'@param ...
   #'    In these arguments, you can add any arguments that you would give a 
   #'    ggplot2 graph outside of the aesthetics.
@@ -766,6 +825,8 @@ geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, p
   #'@returns (numeric value)
   #'    If the "thresholding" argument is TRUE, then this function also returns
   #'    the maximum cumulative position in the whole genome.
+  #'@section Warning:
+  #' This function has been made to deal only with two-colored palettes.
   #' @export
   
   # First, we added some error checking to keep the function from running for
@@ -825,7 +886,7 @@ geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, p
       mutate(Chromosome = Chromosome %>% 
                factor(levels = df %>% select(Chromosome) %>% 
                         unique %>% 
-                        arrange(as.numeric(gsub("\\D+", "", Chromosome))) %>% 
+                        arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
                         as.vector %>% unname %>% unlist)) %>% 
       # We remove missing values if there are any
       drop_na()
@@ -843,7 +904,7 @@ geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, p
                         transform_position_ade2tidy() %>%
                         select(Chromosome) %>% 
                         unique %>% 
-                        arrange(as.numeric(gsub("\\D+", "", Chromosome))) %>% 
+                        arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
                         as.vector %>% unname %>% unlist)) %>% 
       # And we select the columns of interest
       select(Position, Chromosome, matches(to_select)) %>% 
@@ -1098,7 +1159,7 @@ thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL,
   # We also attribute the plot and the maximum cumulative position along the
   # genome to variables. 
   c(p, max_value) %<-% geom_manhattan(df, mapping, thresholding = TRUE, ...)
-
+  
   # We get as many colours as there are threshold values
   colors_thresholds <- plasma(n = length(thresholds))
   
@@ -1114,7 +1175,7 @@ thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL,
       y_value_line <- threshold
       # We also add a label to the line to differenciate them. It also has a y
       # position. We place it higher than the horizontal line.
-      y_value_text <- threshold * 1.2
+      y_value_text <- threshold * 1.5
     }else{
       # If we are working with percentages, we have to get the top percentages
       # of the distribution of considered values
@@ -1137,16 +1198,17 @@ thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL,
         mutate(Absolute = (!!as.symbol(colName)) %>% abs) %>% 
         arrange(desc(Absolute)) %>% 
         dplyr::slice(1:(threshold * nrow(.))) %>% 
-        select(Absolute) %>% min * 1.2
+        select(Absolute) %>% min * 1.5
     }
     # For each value, we append the plot with the new line and text
     p <- p +
       # We add the horizontal line
-      geom_hline(yintercept = y_value_line, color = colors_thresholds[i]) +
+      geom_hline(yintercept = y_value_line, color = "black", lwd = 1.2, lty = "dashed") +
       # We add the text above
       annotate("text", x = max_value * 0.975, y = y_value_text,
-               label = ifelse(is_null(percentages), value %>% as.character,
-                              paste0((threshold * 100) %>% as.character, "%")))
+               label = ifelse(is_null(percentages), threshold %>% as.character,
+                              paste0((threshold * 100) %>% as.character, "%")),
+               size = 20/.pt)
     
   }
   # Once we iterated over all the possible cutoff values, we return the plot
@@ -1157,7 +1219,7 @@ thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL,
 #################### 5. Cline fitting and visualisation   ######################
 ################################################################################
 
-optimise_clines <- function(Priors, logarithm = FALSE, ...){
+optimise_clines <- function(Priors, logarithm = FALSE, batch_size = 1000, ...){
   #' Optimise cline models
   #' 
   #' This function is made to optimise the best of three models (stable, linear
@@ -1173,6 +1235,10 @@ optimise_clines <- function(Priors, logarithm = FALSE, ...){
   #'    This arguemnt is used to know if the optimisation process should be done
   #'    using logarithm transformations for the cline model fitting (TRUE) or 
   #'    not (FALSE)
+  #'@param batch_size (integer). (default = 1000)
+  #'    How many rows to sub-sample from the Priors data frame to run in parallel.
+  #'    If the batch is too big, it will be longer. If it is smaller, it will
+  #'    do more iterations.
   #'@param ...
   #'    Supplementary arguments to pass to the get_gentoype_transect function.
   #'    See this function to know which arguments to use.
@@ -1188,17 +1254,14 @@ optimise_clines <- function(Priors, logarithm = FALSE, ...){
   # this function runs for a long time
   genotype_transect <- get_genotype_transect(...)
   
-  # This determines which function to use for the optimisation of the cline model
-  # if we want to do a logarithm transformation, we use the clineflog function. 
+  # This determines which function to use for the optimisation of the cline model.
+  # If we want to do a logarithm transformation, we use the clineflog function. 
   # Otherwise, we use the clinef function
   function_to_use <- ifelse(logarithm, clineflog, clinef)
-  # Here, we make a vector of booleans to use in the tranformation of the priors
-  # if we are using a logarithm transformation or not.
-  logarithm_list <- rep(logarithm, (Priors %>% nrow)/2)
   
   # Then, we slighly modify the priors to be used in the optimisation process
   Priors_func <- Priors %>% 
-    # We rename columns so we do not confuse them with other arguments
+    # Then, we rename the population and position columns to not get confused
     rename(Pop = Population,
            Pos = Position) %>% 
     # We separate every SNP from every population to optimise it separately
@@ -1231,313 +1294,380 @@ optimise_clines <- function(Priors, logarithm = FALSE, ...){
       # the logit function
       p_left_shelt = ifelse(p_left_shelt == 1, 0.999999,
                             ifelse(p_left_shelt == 0, 0.000001, p_left_shelt)),
-      p_left_shelt = ifelse(logarithm, p_left_shelt %>% logit, p_left_shelt),
       p_left_max = ifelse(logarithm, min(p_left_shelt + 0.1, 0.999999) %>% logit,
                           min(p_left_shelt + 0.1, 0.999999)),
       p_left_min = ifelse(logarithm, max(p_left_shelt - 0.1, 0.000001) %>% logit,
                           max(p_left_shelt - 0.1, 0.000001)),
+      p_left_shelt = ifelse(logarithm, p_left_shelt %>% logit, p_left_shelt),
       p_right_expos = ifelse(p_right_expos == 1, 0.999999,
                              ifelse(p_right_expos == 0, 0.000001, p_right_expos)),
-      p_right_expos = ifelse(logarithm, p_right_expos %>% logit, p_right_expos),
       p_right_max = ifelse(logarithm, min(p_right_expos + 0.1, 0.999999) %>% logit,
                            min(p_right_expos + 0.1, 0.999999)),
       p_right_min = ifelse(logarithm, max(p_right_expos - 0.1, 0.000001) %>% logit,
-                           max(p_right_expos - 0.1, 0.000001))
+                           max(p_right_expos - 0.1, 0.000001)),
+      p_right_expos = ifelse(logarithm, p_right_expos %>% logit, p_right_expos)
     )
+    
+    # To win some time, we will iterate over all the lines in the table by 
+  number_of_iterations <- ((nrow(Priors_func)/batch_size) %>% floor) + 1
+  Comp_table <- data.frame()
+  for (i in 1:number_of_iterations){
+    # This allows us to know where we are in the iterations
+    # Print the progress bar to see where we are in the loop
+    progress_bar(iteration_number = i, nb_iterations_to_do = number_of_iterations)
+
+    
+    # Then, we sample 10 values from the Priors_func for the clinal model
+    subset_priors_func <- Priors_func %>% 
+      head(n = batch_size * i) %>% 
+      tail(n = batch_size)
+    # And we do the same from the Priors for the sable and linear models
+    subset_priors <- Priors %>% 
+      head(n = batch_size * i) %>% 
+      tail(n = batch_size)
+    
+    # Here, we make a vector of booleans to use in the tranformation of the priors
+    # if we are using a logarithm transformation or not.
+    list_size_fr <- subset_priors_func %>% 
+      filter(Pop == "France") %>% 
+      nrow()
+    list_size_sw <- subset_priors_func %>% 
+      filter(Pop == "Sweden") %>% 
+      nrow()
+    logarithm_list_fr <- rep(logarithm, list_size_fr)
+    logarithm_list_sw <- rep(logarithm, list_size_sw)
+    
+      
+    # Now that the priors are ready, we can start the optimisation process
+    Clinal_model_i <- subset_priors_func %>% 
+      # We separate every SNP from every population
+        group_by(Pop, Pos) %>% 
+        # And summarise the optimised parameters we are interested in
+        bow(tie(Centre, Width, Left, Right) := mle2(function_to_use,
+                                                    # Here, we give the priors to use
+                                                    # for every parameter we want
+                                                    list(centre = Centre_prior,
+                                                         width = Width_prior ,
+                                                         left = p_left_shelt,
+                                                         right = p_right_expos),
+                                                    # In the data part, we give the 
+                                                    # position of each individual along
+                                                    # the transect and the genotype
+                                                    # of each individual for the chosen
+                                                    # SNP in the given population
+                                                    data = list(x = genotype_transect %>% 
+                                                                  filter(Population == Pop) %>% 
+                                                                  select(LCmeanDist) %>% 
+                                                                  drop_na %>% 
+                                                                  as.vector %>%
+                                                                  unlist %>%
+                                                                  unname,
+                                                                g = genotype_transect %>% 
+                                                                  filter(Population == Pop) %>%
+                                                                  select(Pos) %>% 
+                                                                  rename(Geno = starts_with("LG")) %>% 
+                                                                  drop_na %>% 
+                                                                  mutate(Geno = ifelse(rep(reversed, nrow(.)), 2 - Geno, Geno)) %>% 
+                                                                  select(Geno) %>% 
+                                                                  as.vector %>%
+                                                                  unlist %>%
+                                                                  unname,
+                                                                n = 2),
+                                                    # Method to use
+                                                    method = "L-BFGS-B",
+                                                    # Upper limits of the optimisation
+                                                    # for the parameters we are trying
+                                                    # to optimise
+                                                    upper = list(centre = Centre_max,
+                                                                 width = Width_max,
+                                                                 left = p_left_max,
+                                                                 right = p_right_max),
+                                                    # lower limits of the optimisation
+                                                    # for the parameters we are trying
+                                                    # to optimise
+                                                    lower = list(centre = Centre_min,
+                                                                 width = Width_min,
+                                                                 left = p_left_min,
+                                                                 right = p_right_min)) %>%
+              # We extract the coefficients 
+              coef() %>% 
+              # and round them to three digits
+              round(digits = 3)) %>% 
+        # Then, we merge this with the Priors table to know if we used a log 
+        # transformation and if the allele frequencies are reversed or not
+        left_join(subset_priors_func, by = c("Pop", "Pos")) %>% 
+        # We select the columns we want to keep
+        select(Pop, Pos, reversed, Centre, Width, Left, Right) %>% 
+        # Backtransform the optimised parameters
+        mutate(Width = ifelse(ifelse(Pop == "France", logarithm_list_fr, logarithm_list_sw), Width %>% exp, Width),
+               Left = ifelse(ifelse(Pop == "France", logarithm_list_fr, logarithm_list_sw), Left %>% invlogit, Left),
+               Right = ifelse(ifelse(Pop == "France", logarithm_list_fr, logarithm_list_sw), Right %>% invlogit, Right),
+               # Backtransform with the reversed parameter
+               Left = ifelse(reversed, 1 - Left, Left),
+               Right = ifelse(reversed, 1 - Right, Right)) %>% 
+        rename(Position = Pos,
+               Population = Pop)
+    
+    # Once we estimated the clinal parameters, we are now going to estimate the 
+    # parameter for the stable model
+    Stable_model_i <- subset_priors %>% 
+      # As the stable model describes a continuous allele frequency along the 
+      # transect, we only need one parameter to optimise and it is the mean allelic
+      # frequency in the transect
+      mutate(Mean_freq = (p_left_shelt + p_right_expos)/2) %>% 
+      # In the same way, we isolate each SNP from each population
+      rename(Pop = Population,
+             Pos = Position) %>% 
+      group_by(Pop, Pos) %>% 
+      # And summarise the optimised parameter for each SNP in each population
+      summarise(Stable_model_fit = mle2(stable,
+                                        # List of parameters to optimise
+                                        list(p_all = Mean_freq),
+                                        # In the data part, we give the 
+                                        # position of each individual along
+                                        # the transect and the genotype
+                                        # of each individual for the chosen
+                                        # SNP in the given population
+                                        data = list(x = genotype_transect %>% 
+                                                      filter(Population == Pop) %>% 
+                                                      select(LCmeanDist) %>% 
+                                                      drop_na %>% 
+                                                      as.vector %>% unlist %>% unname,
+                                                    g = genotype_transect %>% 
+                                                      filter(Population == Pop) %>%
+                                                      select(Pos) %>% 
+                                                      drop_na %>% 
+                                                      as.vector %>% unlist %>% unname,
+                                                    n = 2),
+                                        # Method to use
+                                        method = "L-BFGS-B",
+                                        # Upper bound of the estimated parameter
+                                        upper = list(p_all = 0.999999),
+                                        # lower bound of the estimated parameter
+                                        lower = list(p_all = 0.000001)) %>% 
+                  # We extract the coefficients and round them to three digits
+                  coef() %>% round(digits = 3)) %>% 
+      rename(Position = Pos,
+             Population = Pop)
+    
+    # Once we estimated the stable parameters, we are now going to estimate the 
+    # parameters for the linear model
+    Linear_model_i <- subset_priors %>% 
+      # As the linear model fits best for p_left < p_right, we change the allelic
+      # frequencies if they are reversed (p_left > p_right).
+      mutate(reversed = p_left_shelt > p_right_expos,
+             p_left_shelt = ifelse(reversed, 1 - p_left_shelt, p_left_shelt),
+             p_right_expos = ifelse(reversed, 1 - p_right_expos, p_right_expos)) %>% 
+      # Again, we separate each SNP from each Population
+      rename(Pos = Position,
+             Pop = Population) %>% 
+      group_by(Pop, Pos) %>% 
+      # And we summarise the parameters we want for the linear model
+      bow(tie(p_left, p_right) := mle2(linear,
+                                       # List of parameters to optimise
+                                       list(p_left = p_left_shelt,
+                                            p_right = p_right_expos),
+                                       # In the data part, we give the 
+                                       # position of each individual along
+                                       # the transect and the genotype
+                                       # of each individual for the chosen
+                                       # SNP in the given population
+                                       data = list(x = genotype_transect %>% 
+                                                     filter(Population == Pop) %>% 
+                                                     select(LCmeanDist) %>% 
+                                                     drop_na %>% 
+                                                     as.vector %>% unlist %>% unname,
+                                                   g = genotype_transect %>% 
+                                                     filter(Population == Pop) %>%
+                                                     select(Pos) %>% 
+                                                     drop_na %>% 
+                                                     as.vector %>% unlist %>% unname,
+                                                   n = 2),
+                                       # Method to use
+                                       method = "L-BFGS-B",
+                                       # Upper bounds of the parameters to optimise
+                                       upper = list(p_left = 0.999999,
+                                                    p_right = 0.999999),
+                                       # Lower bounds of the parameters to estimate
+                                       lower = list(p_left = 0.000001,
+                                                    p_right = 0.000001)) %>%
+            # We get the coefficient of the parameters we want and round them to 
+            # three digits
+            coef() %>% round(digits = 3)) %>% 
+      rename(Population = Pop,
+             Position = Pos) %>% 
+      # and we backtransform the reversion
+      left_join(subset_priors %>% 
+                  mutate(reversed = p_left_shelt > p_right_expos) %>% 
+                  select(Population, Position, reversed),
+                by = c("Population", "Position")) %>% 
+      mutate(p_left = ifelse(reversed, 1 - p_left, p_left),
+             p_right = ifelse(reversed, 1 - p_right, p_right))
+    
+    # The last step is to merger all the estimated parameters together and calculate
+    # the AICs of the models using the estimated parameters.
+    Comp_table_i <- Clinal_model_i %>% 
+      # First, we merge the table of the estimated parameters together
+      left_join(Stable_model_i, by = c("Population", "Position")) %>% 
+      left_join(Linear_model_i, by = c("Population", "Position", "reversed")) %>% 
+      left_join(subset_priors_func %>% 
+                  rename(Population = Pop,
+                         Position = Pos), by = c("Population", "Position", "reversed")) %>% 
+      # Again, we separate each SNP of each population
+      rename(Pop = Population,
+             Pos = Position) %>% 
+      group_by(Pop, Pos) %>% 
+      # And we calculate the AIC of each model using the same method as in the 
+      # optimisation process. For the clinal model, this suggests we need to do the
+      # transformation to logarithm values beforehand if necessary
+      mutate(
+        # Width
+        Width = ifelse(logarithm, Width %>% log, Width),
+        Width_max = ifelse(logarithm, Width_max %>% log, Width_max),
+        Width_min = ifelse(logarithm, Width_min %>% log, Width_min),
+        # check if the allelic frequency are reversed
+        Left = ifelse(reversed, 1 - Left, Left),
+        Right = ifelse(reversed, 1 - Right, Right),
+        p_left = ifelse(reversed, 1 - p_left, p_left),
+        p_right = ifelse(reversed, 1 - p_right, p_right),
+        # Then, the logarithm transformation of the priors to do the log optimisation
+        # requires that the allelic frequencies be transformed using the logit function.
+        # So, in the same way as for the width, we take the logit of the allelic
+        # frequencies if we want to do the logarithm transformation.
+        # Wa also change fixed allele frequencies to be able to transform them with
+        # the logit function
+        Left = ifelse(Left == 1, 0.999999,
+                      ifelse(Left == 0, 0.000001, Left)),
+        p_left_max = ifelse(logarithm, min(Left + 0.1, 0.999999) %>% logit,
+                            min(Left + 0.1, 0.999999)),
+        p_left_min = ifelse(logarithm, max(Left - 0.1, 0.000001) %>% logit,
+                            max(Left - 0.1, 0.000001)),
+        Left = ifelse(logarithm, Left %>% logit, Left),
+        Right = ifelse(Right == 1, 0.999999,
+                       ifelse(Right == 0, 0.000001, Right)),
+        p_right_max = ifelse(logarithm, min(Right + 0.1, 0.999999) %>% logit,
+                             min(Right + 0.1, 0.999999)),
+        p_right_min = ifelse(logarithm, max(Right - 0.1, 0.000001) %>% logit,
+                             max(Right - 0.1, 0.000001)),
+        Right = ifelse(logarithm, Right %>% logit, Right),
+      ) %>% 
+      # Then, we can calculate the AICs
+      ## First for the stable model
+      mutate(AIC_stable = mle2(stable, list(p_all = Stable_model_fit),
+                               data = list(x = genotype_transect %>% 
+                                             filter(Population == Pop) %>% 
+                                             select(LCmeanDist) %>% 
+                                             drop_na %>% 
+                                             as.vector %>% unlist %>% unname,
+                                           g = genotype_transect %>% 
+                                             filter(Population == Pop) %>%
+                                             select(Pos) %>% 
+                                             drop_na %>% 
+                                             as.vector %>% unlist %>% unname,
+                                           n = 2),
+                               method = "L-BFGS-B",
+                               upper = list(p_all = 0.999999),
+                               lower = list(p_all = 0.000001)) %>% 
+               AIC,
+             ## Then for the linear model
+             AIC_linear = mle2(linear, list(p_left = p_left,
+                                            p_right = p_right),
+                               data = list(x = genotype_transect %>% 
+                                             filter(Population == Pop) %>% 
+                                             select(LCmeanDist) %>% 
+                                             drop_na %>% 
+                                             as.vector %>% unlist %>% unname,
+                                           g = genotype_transect %>% 
+                                             filter(Population == Pop) %>%
+                                             select(Pos) %>% 
+                                             drop_na %>% 
+                                             as.vector %>% unlist %>% unname,
+                                           n = 2),
+                               method = "L-BFGS-B",
+                               upper = list(p_left = 0.999999,
+                                            p_right = 0.999999),
+                               lower = list(p_left = 0.000001,
+                                            p_right = 0.000001)) %>% 
+               AIC,
+             ## And finally for the clinal model
+             AIC_clinal = mle2(function_to_use,
+                               list(centre = Centre,
+                                    width = Width ,
+                                    left = Left,
+                                    right = Right),
+                               data = list(x = genotype_transect %>% 
+                                             filter(Population == Pop) %>% 
+                                             select(LCmeanDist) %>% 
+                                             drop_na %>% 
+                                             as.vector %>% unlist %>% unname,
+                                           g = genotype_transect %>% 
+                                             filter(Population == Pop) %>%
+                                             select(Pos) %>% 
+                                             rename(Geno = starts_with("LG")) %>% 
+                                             drop_na %>% 
+                                             mutate(Geno = ifelse(rep(reversed, nrow(.)), 2 - Geno, Geno)) %>% 
+                                             select(Geno) %>% 
+                                             as.vector %>% unlist %>% unname,
+                                           n = 2),
+                               "L-BFGS-B",
+                               upper = list(centre = Centre_max,
+                                            width = Width_max,
+                                            left = p_left_max,
+                                            right = p_right_max),
+                               lower = list(centre = Centre_min,
+                                            width = Width_min,
+                                            left = p_left_min,
+                                            right = p_right_min)) %>%
+               AIC) %>% 
+      # Then, we need to backtransform the width and allelic frequencies
+      mutate(Width = ifelse(logarithm, Width %>% exp, Width),
+             Left = ifelse(logarithm, Left %>% invlogit, Left),
+             Right = ifelse(logarithm, Right %>% invlogit, Right),
+             # Backtransform with the reversed parameter
+             Left = ifelse(reversed, 1 - Left, Left),
+             Right = ifelse(reversed, 1 - Right, Right),
+             p_left = ifelse(reversed, 1 - p_left, p_left),
+             p_right = ifelse(reversed, 1 - p_right, p_right)) %>% 
+      # We remove columns we do not need in the output
+      select(-c(p_left_shelt, p_right_expos, contains("prior"), matches("max|min"))) %>%
+      # Then, we choose which model is the best between the three estimated ones 
+      # using the AICs
+      mutate(Delta_AIC_stable = AIC_clinal - AIC_stable, Delta_AIC_linear = AIC_clinal - AIC_linear,
+             Best_model = ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable > 0), "Stable",
+                                 ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable < 0), "Clinal",
+                                        ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear > 0), "Linear",
+                                               ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear < 0), "Clinal", NA)))),
+             Best_model_AIC = ifelse(Best_model == "Stable", AIC_stable, ifelse(Best_model == "Linear", AIC_linear, AIC_clinal)),
+             Second_best_model = ifelse(Best_model == "Stable" & Delta_AIC_linear > 0, "Linear",
+                                        ifelse(Best_model == "Stable" & Delta_AIC_linear < 0, "Clinal",
+                                               ifelse(Best_model == "Linear" & Delta_AIC_stable < 0, "Clinal",
+                                                      ifelse(Best_model == "Linear" & Delta_AIC_stable > 0, "Stable",
+                                                             ifelse(Best_model == "Clinal" & AIC_linear > AIC_stable, "Stable", "Linear"))))),
+             Delta_AIC_second_best_model = ifelse(Best_model == "Clinal" & Second_best_model == "Linear", AIC_clinal - AIC_linear,
+                                                  ifelse(Best_model == "Clinal" & Second_best_model == "Stable", AIC_clinal - AIC_stable,
+                                                         ifelse(Best_model == "Linear" & Second_best_model == "Clinal", AIC_linear - AIC_clinal,
+                                                                ifelse(Best_model == "Linear" & Second_best_model == "Stable", AIC_linear - AIC_stable,
+                                                                       ifelse(Best_model == "Stable" & Second_best_model == "Clinal", AIC_stable - AIC_clinal, AIC_stable - AIC_linear)))))) %>% 
+      # We remove the AICs
+      select(-starts_with("AIC_")) %>% 
+      # Rename the population and position columns
+      rename(Position = Pos,
+             Population = Pop) %>% 
+      ungroup
+    
+    # Then, we add this to the general comp table containing all the outputs
+    Comp_table <- add_table_to_df_in_iteration(Comp_table, Comp_table_i)
+    
+    
+    
+  }
   
+  # And return the final table. As the number of iterations is not always a round
+  # number, several lines may be duplicated, so we keep only the unique ones
+  return(Comp_table %>% 
+           unique)
   
-  # Now that the priors are ready, we can start the optimisation process
-  Clinal_model <- Priors_func %>% 
-    # We separate every SNP from every population
-    group_by(Pop, Pos) %>% 
-    # And summarise the optimised parameters we are interested in
-    bow(tie(Centre, Width, Left, Right) := mle2(function_to_use,
-                                                # Here, we give the priors to use
-                                                # for every parameter we want
-                                                list(centre = Centre_prior,
-                                                     width = Width_prior ,
-                                                     left = p_left_shelt,
-                                                     right = p_right_expos),
-                                                # In the data part, we give the 
-                                                # position of each individual along
-                                                # the transect and the genotype
-                                                # of each individual for the chosen
-                                                # SNP in the given population
-                                                data = list(x = genotype_transect %>% 
-                                                              filter(Population == Pop) %>% 
-                                                              select(LCmeanDist) %>% 
-                                                              drop_na %>% 
-                                                              as.vector %>%
-                                                              unlist %>%
-                                                              unname,
-                                                            g = genotype_transect %>% 
-                                                              filter(Population == Pop) %>%
-                                                              select(Pos) %>% 
-                                                              rename(Geno = starts_with("LG")) %>% 
-                                                              drop_na %>% 
-                                                              mutate(Geno = ifelse(rep(reversed, nrow(.)), 2 - Geno, Geno)) %>% 
-                                                              select(Geno) %>% 
-                                                              as.vector %>%
-                                                              unlist %>%
-                                                              unname,
-                                                            n = 2),
-                                                # Method to use
-                                                method = "L-BFGS-B",
-                                                # Upper limits of the optimisation
-                                                # for the parameters we are trying
-                                                # to optimise
-                                                upper = list(centre = Centre_max,
-                                                             width = Width_max,
-                                                             left = p_left_max,
-                                                             right = p_right_max),
-                                                # lower limits of the optimisation
-                                                # for the parameters we are trying
-                                                # to optimise
-                                                lower = list(centre = Centre_min,
-                                                             width = Width_min,
-                                                             left = p_left_min,
-                                                             right = p_right_min)) %>%
-          # We extract the coefficients 
-          coef() %>% 
-          # and round them to three digits
-          round(digits = 3)) %>% 
-    # Then, we merge this with the Priors table to know if we used a log 
-    # transformation and if the allele frequencies are reversed or not
-    left_join(Priors_func, by = c("Pop", "Pos")) %>% 
-    # We select the columns we want to keep
-    select(Pop, Pos, reversed, Centre, Width, Left, Right) %>% 
-    # Backtransform the optimised parameters
-    mutate(Width = ifelse(logarithm_list, Width %>% exp, Width),
-           Left = ifelse(logarithm_list, Left %>% invlogit, Left),
-           Right = ifelse(logarithm_list, Right %>% invlogit, Right),
-           # Backtransform with the reversed parameter
-           Left = ifelse(reversed, 1 - Left, Left),
-           Right = ifelse(reversed, 1 - Right, Right)) %>% 
-    rename(Position = Pos,
-           Population = Pop)
-  
-  # Once we estimated the clinal parameters, we are now going to estimate the 
-  # parameter for the stable model
-  Stable_model <- Priors %>% 
-    # As the stable model describes a continuous allele frequency along the 
-    # transect, we only need one parameter to optimise and it is the mean allelic
-    # frequency in the transect
-    mutate(Mean_freq = (p_left_shelt + p_right_expos)/2) %>% 
-    # In the same way, we isolate each SNP from each population
-    rename(Pop = Population,
-           Pos = Position) %>% 
-    group_by(Pop, Pos) %>% 
-    # And summarise the optimised parameter for each SNP in each population
-    summarise(Stable_model_fit = mle2(stable,
-                                      # List of parameters to optimise
-                                      list(p_all = Mean_freq),
-                                      # In the data part, we give the 
-                                      # position of each individual along
-                                      # the transect and the genotype
-                                      # of each individual for the chosen
-                                      # SNP in the given population
-                                      data = list(x = genotype_transect %>% 
-                                                    filter(Population == Pop) %>% 
-                                                    select(LCmeanDist) %>% 
-                                                    drop_na %>% 
-                                                    as.vector %>% unlist %>% unname,
-                                                  g = genotype_transect %>% 
-                                                    filter(Population == Pop) %>%
-                                                    select(Pos) %>% 
-                                                    drop_na %>% 
-                                                    as.vector %>% unlist %>% unname,
-                                                  n = 2),
-                                      # Method to use
-                                      method = "L-BFGS-B",
-                                      # Upper bound of the estimated parameter
-                                      upper = list(p_all = 0.999999),
-                                      # lower bound of the estimated parameter
-                                      lower = list(p_all = 0.000001)) %>% 
-                # We extract the coefficients and round them to three digits
-                coef() %>% round(digits = 3)) %>% 
-    rename(Position = Pos,
-           Population = Pop)
-  
-  # Once we estimated the clinal parameters, we are now going to estimate the 
-  # parameters for the linear model
-  Linear_model <- Priors %>% 
-    # Again, we separate each SNP from each Population
-    rename(Pos = Position,
-           Pop = Population) %>% 
-    group_by(Pop, Pos) %>% 
-    # And we summarise the parameters we want for the linear model
-    bow(tie(p_left, p_right) := mle2(linear,
-                                     # List of parameters to optimise
-                                     list(p_left = p_left_shelt,
-                                          p_right = p_right_expos),
-                                     # In the data part, we give the 
-                                     # position of each individual along
-                                     # the transect and the genotype
-                                     # of each individual for the chosen
-                                     # SNP in the given population
-                                     data = list(x = genotype_transect %>% 
-                                                   filter(Population == Pop) %>% 
-                                                   select(LCmeanDist) %>% 
-                                                   drop_na %>% 
-                                                   as.vector %>% unlist %>% unname,
-                                                 g = genotype_transect %>% 
-                                                   filter(Population == Pop) %>%
-                                                   select(Pos) %>% 
-                                                   drop_na %>% 
-                                                   as.vector %>% unlist %>% unname,
-                                                 n = 2),
-                                     # Method to use
-                                     method = "L-BFGS-B",
-                                     # Upper bounds of the parameters to optimise
-                                     upper = list(p_left = 0.999999,
-                                                  p_right = 0.999999),
-                                     # Lower bounds of the parameters to estimate
-                                     lower = list(p_left = 0.000001,
-                                                  p_right = 0.000001)) %>%
-          # We get the coefficient of the parameters we want and round them to 
-          # three digits
-          coef() %>% round(digits = 3)) %>% 
-    rename(Population = Pop,
-           Position = Pos)
-  
-  # The last step is to merger all the estimated parameters together and calculate
-  # the AICs of the models using the estimated parameters.
-  Comp_table <- Clinal_model %>% 
-    # First, we merge the table of the estimated parameters together
-    left_join(Stable_model, by = c("Population", "Position")) %>% 
-    left_join(Linear_model, by = c("Population", "Position")) %>% 
-    left_join(Priors_func %>% 
-                rename(Population = Pop,
-                       Position = Pos), by = c("Population", "Position", "reversed")) %>% 
-    # Again, we separate each SNP of each population
-    rename(Pop = Population,
-           Pos = Position) %>% 
-    group_by(Pop, Pos) %>% 
-    # And we calculate the AIC of each model using the same method as in the 
-    # optimisation process. For the clinal model, this suggests we need to do the
-    # transformation to logarithm values beforehand if necessary
-    mutate(
-      # Width
-      Width = ifelse(logarithm, Width %>% log, Width),
-      Width_max = ifelse(logarithm, Width_max %>% log, Width_max),
-      Width_min = ifelse(logarithm, Width_min %>% log, Width_min),
-      # check if the allelic frequency are reversed
-      Left = ifelse(reversed, 1 - Left, Left),
-      Right = ifelse(reversed, 1 - Right, Right),
-      # Then, the logarithm transformation of the priors to do the log optimisation
-      # requires that the allelic frequencies be transformed using the logit function.
-      # So, in the same way as for the width, we take the logit of the allelic
-      # frequencies if we want to do the logarithm transformation.
-      # Wa also change fixed allele frequencies to be able to transform them with
-      # the logit function
-      Left = ifelse(Left == 1, 0.999999,
-                            ifelse(Left == 0, 0.000001, Left)),
-      Left = ifelse(logarithm, Left %>% logit, Left),
-      p_left_max = ifelse(logarithm, min(Left + 0.1, 0.999999) %>% logit,
-                          min(Left + 0.1, 0.999999)),
-      p_left_min = ifelse(logarithm, max(Left - 0.1, 0.000001) %>% logit,
-                          max(Left - 0.1, 0.000001)),
-      Right = ifelse(Right == 1, 0.999999,
-                             ifelse(Right == 0, 0.000001, Right)),
-      Right = ifelse(logarithm, Right %>% logit, Right),
-      p_right_max = ifelse(logarithm, min(Right + 0.1, 0.999999) %>% logit,
-                           min(Right + 0.1, 0.999999)),
-      p_right_min = ifelse(logarithm, max(Right - 0.1, 0.000001) %>% logit,
-                           max(Right - 0.1, 0.000001))
-    ) %>% 
-    # Then, we can calculate the AICs
-    ## First for the stable model
-    mutate(AIC_stable = mle2(stable, list(p_all = Stable_model_fit),
-                             data = list(x = genotype_transect %>% 
-                                           filter(Population == Pop) %>% 
-                                           select(LCmeanDist) %>% 
-                                           drop_na %>% 
-                                           as.vector %>% unlist %>% unname,
-                                         g = genotype_transect %>% 
-                                           filter(Population == Pop) %>%
-                                           select(Pos) %>% 
-                                           drop_na %>% 
-                                           as.vector %>% unlist %>% unname,
-                                         n = 2),
-                             method = "L-BFGS-B",
-                             upper = list(p_all = 0.999999),
-                             lower = list(p_all = 0.000001)) %>% 
-             AIC,
-           ## Then for the linear model
-           AIC_linear = mle2(linear, list(p_left = p_left,
-                                          p_right = p_right),
-                             data = list(x = genotype_transect %>% 
-                                           filter(Population == Pop) %>% 
-                                           select(LCmeanDist) %>% 
-                                           drop_na %>% 
-                                           as.vector %>% unlist %>% unname,
-                                         g = genotype_transect %>% 
-                                           filter(Population == Pop) %>%
-                                           select(Pos) %>% 
-                                           drop_na %>% 
-                                           as.vector %>% unlist %>% unname,
-                                         n = 2),
-                             method = "L-BFGS-B",
-                             upper = list(p_left = 0.999999,
-                                          p_right = 0.999999),
-                             lower = list(p_left = 0.000001,
-                                          p_right = 0.000001)) %>% 
-             AIC,
-           ## And finally for the clinal model
-           AIC_clinal = mle2(function_to_use,
-                             list(centre = Centre,
-                                  width = Width ,
-                                  left = Left,
-                                  right = Right),
-                             data = list(x = genotype_transect %>% 
-                                           filter(Population == Pop) %>% 
-                                           select(LCmeanDist) %>% 
-                                           drop_na %>% 
-                                           as.vector %>% unlist %>% unname,
-                                         g = genotype_transect %>% 
-                                           filter(Population == Pop) %>%
-                                           select(Pos) %>% 
-                                           rename(Geno = starts_with("LG")) %>% 
-                                           drop_na %>% 
-                                           mutate(Geno = ifelse(rep(reversed, nrow(.)), 2 - Geno, Geno)) %>% 
-                                           select(Geno) %>% 
-                                           as.vector %>% unlist %>% unname,
-                                         n = 2),
-                             "L-BFGS-B",
-                             upper = list(centre = Centre_max,
-                                          width = Width_max,
-                                          left = p_left_max,
-                                          right = p_right_max),
-                             lower = list(centre = Centre_min,
-                                          width = Width_min,
-                                          left = p_left_min,
-                                          right = p_right_min)) %>%
-             AIC) %>% 
-    # Then, we need to backtransform the width and allelic frequencies
-    mutate(Width = ifelse(logarithm_list, Width %>% exp, Width),
-           Left = ifelse(logarithm_list, Left %>% invlogit, Left),
-           Right = ifelse(logarithm_list, Right %>% invlogit, Right),
-           # Backtransform with the reversed parameter
-           Left = ifelse(reversed, 1 - Left, Left),
-           Right = ifelse(reversed, 1 - Right, Right)) %>% 
-    # We remove columns we do not need in the output
-    select(-c(p_left_shelt, p_right_expos, contains("prior"), matches("max|min"))) %>%
-    # Then, we choose which model is the best between the three estimated ones 
-    # using the AICs
-    mutate(Delta_AIC_stable = AIC_clinal - AIC_stable, Delta_AIC_linear = AIC_clinal - AIC_linear,
-           Model_to_select = ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable > 0), "Stable",
-                                    ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable < 0), "Clinal",
-                                           ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear > 0), "Linear",
-                                                  ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear < 0), "Clinal"))))) %>% 
-    # We remove the AICs
-    select(-starts_with("AIC_")) %>% 
-    # Rename the population and position columns
-    rename(Position = Pos,
-           Population = Pop) %>% 
-    ungroup
-  
-  # And return the final table
-  return(Comp_table)
+  print("Done !")
   
 }
 
@@ -1592,11 +1722,29 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
   }
   # Then, we iterate over each SNP to get the plotting information and the 
   # goodness of fit if needed.
+  # We also make a counter to see the advancement
+  i <- 1
+  nb_positions <- cline_params$Position %>% unique %>% length
   for (position_i in cline_params$Position %>% unique){
+    # Print the progress bar to see where we are in the loop
+    progress_bar(iteration_number = i, nb_iterations_to_do = nb_positions)
     # Here, we initialise a temporary data frame to put the population information
     # inside and then bind it to the general data frame.
     temp_data <- tibble()
     for (population in cline_params$Population %>% unique){
+      # We isolate the parameters we want to use for the SNP in the selected 
+      # population.
+      Cline_param_pop_pos_i <- cline_params %>% 
+        filter(Population == population,
+               Position == position_i) %>% 
+        # And if the SNP is reversed (p_right > p_left), then, we reverse it
+        # (1 - p)
+        mutate(Left = ifelse(is_reversed, 1 - Left, Left),
+               Right = ifelse(is_reversed, 1 - Right, Right))
+      if (nrow(Cline_param_pop_pos_i) == 0){
+        next
+      }
+      
       # For each SNP in each population, we select the genotype of the SNP for the
       # selected population.
       geno_pop_pos_i <- genotype_transect %>% 
@@ -1615,11 +1763,11 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
       
       # For each SNP, we extract the model to use (clinal, linear or stable) from
       # the input data frame
-      model_to_use <- cline_params %>%
+      model_to_use <- (cline_params %>%
         ungroup %>% 
         filter(Position == position_i,
                Population == population) %>% 
-        select(Model_to_select)
+        select(Best_model))$Best_model
       
       # Select which distance to use (real_distance or a smoothed distance along
       # the transect)
@@ -1630,15 +1778,6 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
                         to = geno_pop_pos_i %>% select(LCmeanDist) %>% max,
                         by = 1)
       }
-      # We isolate the parameters we want to use for the SNP in the selected 
-      # population.
-      Cline_param_pop_pos_i <- cline_params %>% 
-        filter(Population == population,
-               Position == position_i) %>% 
-        # And if the SNP is reversed (p_right > p_left), then, we reverse it
-        # (1 - p)
-        mutate(Left = ifelse(is_reversed, 1 - Left, Left),
-               Right = ifelse(is_reversed, 1 - Right, Right))
       
       # Then, we separate the three different models to get the plotting 
       # information for the model we want to use.
@@ -1671,8 +1810,7 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
                                            width = Cline_param_pop_pos_i$Width,
                                            left = Cline_param_pop_pos_i$Left,
                                            right = Cline_param_pop_pos_i$Right,
-                                           optimisation = FALSE,
-                                           plotting=TRUE) %>% 
+                                           optimisation = FALSE) %>% 
           # In the same way, we rename the output of the function so it matches
           # the name of the SNP.
           rename(!!quo_name(position_i) := phen_cline,
@@ -1761,6 +1899,8 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
           left_join(temp_data, by = c("Population", "LCmeanDist"))
       }
     }
+    # Increase the position counter
+    i <- i + 1
   }
   
   # Once the calculation of all the plotting parameters is done (we finished 
@@ -1787,15 +1927,15 @@ plot_clines <- function(cline_params, real_distance = FALSE, goodness_of_fit = F
              Explained_deviance = Explained_deviance %>% as.numeric,
              Delta_freq = Delta_freq %>% as.numeric,
              Population = Population %>% factor(levels = c("Sweden", "France")))
+    cat("\n")
     return(list("Goodness_of_fit" = Goodness_return, "Cline" = Cline_return))
   }else{
+    cat("\n")
     return(Cline_return)
   }
 }
 
-
-
-print("finished importation")
+print("Finished function importation")
 
 
 
