@@ -56,7 +56,6 @@ metadata <- metadata %>% drop_na(((metadata %>% is.na %>% colSums) < threshold) 
 # Modify the colors to a bi-allelic gene
 Shell_color <- metadata$Shell_color
 
-
 metadata$Shell_color_naive_color <- str_split_fixed(string=Shell_color, pattern = "/", n=2)[, 1]
 metadata$Shell_color_morphology <- str_split_fixed(string=Shell_color, pattern = "/", n=2)[, 2]
 
@@ -135,6 +134,7 @@ Linear_model_color <- metadata %>%
                                                          p_right = 0.001)) %>%
         coef() %>%
         round(digits=3))
+
 # Merge the three dataframes and calculate the AIC for each model
 data_AIC <- metadata %>% 
   left_join(Linear_model_color, by = "Single_location") %>% 
@@ -178,27 +178,30 @@ data_AIC <- metadata %>%
            AIC) %>% 
   select(Single_location, starts_with("AIC")) %>% 
   unique %>%
+  # Here, we estimate which model is the best one using the differences with the
+  # clinal model AIC.
   mutate(Delta_AIC_stable = AIC_clinal - AIC_stable, Delta_AIC_linear = AIC_clinal - AIC_linear,
                     Best_model = ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable > 0), "Stable",
                                         ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable < 0), "Clinal",
                                                ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear > 0), "Linear",
                                                       ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear < 0), "Clinal", NA)))),
-                    Best_model_AIC = ifelse(Best_model == "Stable", AIC_stable, ifelse(Best_model == "Linear", AIC_linear, AIC_clinal)),
-                    Second_best_model = ifelse(Best_model == "Stable" & Delta_AIC_linear > 0, "Linear",
-                                               ifelse(Best_model == "Stable" & Delta_AIC_linear < 0, "Clinal",
-                                                      ifelse(Best_model == "Linear" & Delta_AIC_stable < 0, "Clinal",
-                                                             ifelse(Best_model == "Linear" & Delta_AIC_stable > 0, "Stable",
-                                                                    ifelse(Best_model == "Clinal" & AIC_linear > AIC_stable, "Stable", "Linear"))))),
-                    Delta_AIC_second_best_model = ifelse(Best_model == "Clinal" & Second_best_model == "Linear", AIC_clinal - AIC_linear,
-                                                         ifelse(Best_model == "Clinal" & Second_best_model == "Stable", AIC_clinal - AIC_stable,
-                                                                ifelse(Best_model == "Linear" & Second_best_model == "Clinal", AIC_linear - AIC_clinal,
-                                                                       ifelse(Best_model == "Linear" & Second_best_model == "Stable", AIC_linear - AIC_stable,
-                                                                              ifelse(Best_model == "Stable" & Second_best_model == "Clinal", AIC_stable - AIC_clinal, AIC_stable - AIC_linear)))))) %>% 
+         # Once the best model is selected, we select the according AIC
+         Best_model_AIC = ifelse(Best_model == "Stable", AIC_stable, ifelse(Best_model == "Linear", AIC_linear, AIC_clinal)),
+         # Then, we estimate which is the second best model using the AICs
+         Second_best_model = ifelse(Best_model == "Stable" & Delta_AIC_linear > 0, "Linear",
+                                    ifelse(Best_model == "Stable" & Delta_AIC_linear < 0, "Clinal",
+                                           ifelse(Best_model == "Linear" & Delta_AIC_stable < 0, "Clinal",
+                                                  ifelse(Best_model == "Linear" & Delta_AIC_stable > 0, "Stable",
+                                                         ifelse(Best_model == "Clinal" & AIC_linear > AIC_stable, "Stable", "Linear"))))),
+         # And we calculate the delta AIC between the two best models
+         Delta_AIC_second_best_model = ifelse(Best_model == "Clinal" & Second_best_model == "Linear", AIC_clinal - AIC_linear,
+                                              ifelse(Best_model == "Clinal" & Second_best_model == "Stable", AIC_clinal - AIC_stable,
+                                                     ifelse(Best_model == "Linear" & Second_best_model == "Clinal", AIC_linear - AIC_clinal,
+                                                            ifelse(Best_model == "Linear" & Second_best_model == "Stable", AIC_linear - AIC_stable,
+                                                                   ifelse(Best_model == "Stable" & Second_best_model == "Clinal", AIC_stable - AIC_clinal, AIC_stable - AIC_linear)))))) %>% 
   select(-c(starts_with("AIC"), Delta_AIC_stable, Delta_AIC_linear))
 
-data_AIC %>% paged_table()
-
-#Now that we chose the best model for the two locations, we can use these to do the analysis
+# Now that we chose the best model for the two locations, we can use these to do the analysis
 data1_color <- metadata %>% 
   left_join(Clinal_model_color %>% 
               filter(Single_location == "France"), by="Single_location") %>% 
@@ -226,15 +229,6 @@ LOKn_color_curve <- data.frame(
                  1)
 ) %>% 
   mutate(Single_location = "Sweden" %>% factor(levels = c("Sweden", "France")))
-
-
-Plotting_data_color <- rbind(LAM_color_curve, LOKn_color_curve) %>%
-  # We add a correction for a dominance effect on the brown allele
-  mutate(pheno_cline_p = sqrt(1 - phen_cline),
-         pheno_cline_q = 1 - pheno_cline_p,
-         pheno_cline_homo_brown = pheno_cline_q **2,
-         pheno_cline_homo_yellow = pheno_cline_p **2,
-         pheno_cline_hetero = 2 * pheno_cline_p * pheno_cline_q)
 
 
 ################################ Confidence intervals for color ################################
@@ -331,3 +325,6 @@ color_table <- data1_color %>%
   paged_table()
 
 color_table
+
+# Here, we also add the AIC table
+data_AIC %>% paged_table()
