@@ -44,7 +44,7 @@ LAM_center <- c(lon = -4.771007, lat = 48.463351)
 lam_map <- get_map(location = LAM_center, zoom=17, maptype="satellite")
 
 #Prepare the palette to use to show size evolution along transect
-size_palette = c("#4e79a7", "grey75", "#f28e2b")
+size_palette = c("orange2", "deeppink", "dodgerblue3")
 # Make a function to plot the map
 Sampling_LAM <- function(pos, breaks = c(-20, 3, 46, 80), size_palette) {
   get.poly <- function(a, b, r1 = 0.00025, r2 = 0.0005*2.5) {
@@ -95,7 +95,7 @@ Sampling_LAM <- function(pos, breaks = c(-20, 3, 46, 80), size_palette) {
     mutate(coloring=seq_along(1:nrow(.)))
   ggmap(lam_map, base_layer = ggplot(data=df, aes(x=x, y=y))) + 
     geom_segment(aes(xend = xend, yend = yend, color = coloring)) +
-    scale_color_gradientn(colors = size_palette,
+    scale_color_gradientn(colors = ,
                           labels = c("8.5", "10.2", "13.1"),
                           breaks = c(nrow(df)/3, 2 * nrow(df)/3, nrow(df)))+
     labs(title = "",
@@ -119,7 +119,7 @@ Sampling_LAM <- function(pos, breaks = c(-20, 3, 46, 80), size_palette) {
           text = element_text(size = 30))
 }
 # PLot the map
-LAM_map <- Sampling_LAM(pos = 10, size_palette=size_palette)
+LAM_map <- Sampling_LAM(pos = 10, size_palette = size_palette)
 
 
 
@@ -253,7 +253,7 @@ Sampling_LOK <- function(map, breaks = c(-20, 3, 46, 80), size_palette) {
           text = element_text(size = 30))
 }
 # PLot the map
-Map_LOK <- Sampling_LOK(LOK_map, size_palette=size_palette)
+Map_LOK <- Sampling_LOK(LOK_map, size_palette = size_palette)
 
 ################## Merge all maps ########################
 
