@@ -5,7 +5,7 @@ anyLib(c("tidyverse", "adegenet", "vcfR", "readxl", "statgenGWAS", "ggforce", "g
 
 
 ################## Useful functions  ##################
-source("../General_scripts/Functions_optimise_plot_clines.r")
+source("C:/Documents/Stage_M2_2024/General_scripts/Functions_optimisation_visualisation.r")
 
 ################################ Useful variables ################################
 # Basic theme to use in the graphs
@@ -13,8 +13,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ################## Import the vcf file  ##################
-# The path to the vcf file has to be changed
-data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/filtering_vcf_files/Final_outputs/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
+data <- read.vcfR("C:/Documents/Stage_M2_2024/Project/Genetic data/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
   vcfR2genind()
 
 # We use the summary function to calculate the Hobs of the data we imported
@@ -39,7 +38,7 @@ pca <- dudi.pca(X, scale=TRUE, nf=5, scannf=FALSE)
 
 rm(X)
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "C:/Documents/Stage_M2_2024/Project/Phenotypic analysis/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -88,35 +87,79 @@ metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
          Shell_color_naive = Shell_color_naive %>% factor(levels = c("Yellow", "Brown")),
          Shell_color_morphology = ifelse(! Shell_color_morphology %in% c("Banded", "Square"), "Uniform", "Banded"))
 
+################## Import the inversion delimitations  ##################
+Delim_inversions <- read.csv("../Genetic data/Delimitation_inversions.csv",
+                             header = TRUE, sep = "\t")
+
 ################## Making the delta frequencies correlation plot  ##################
 # Calculate the differences in allelic frequencies
 Delta_freqs_whole_genome <- get_delta_freqs_and_F4(
   genetic_data = data,
   Extreme_values = pca$li,
   var = "Axis2",
-  metadata = metadata
+  meta_data = metadata
 ) %>% 
   left_join(pca$co %>% 
               rownames_to_column("Position"),
             by = "Position")
 
+################## Import the inversion delimitations  ##################
+# First, we read the table for the inversion delimitations
+Delim_inversions <- read.csv("../Data/Delim_inversions.csv", header = TRUE, sep = "\t")
+# Then, we make a table containing the cumulative position of each chromosome
+x <- Delta_freqs_whole_genome %>%
+  select(Position, F4_stat) %>%
+  transform_position_ade2tidy() %>% 
+  separate(Chromosome, c("Chromosome", "SUPER", "SUPER_frag"), "_") %>% 
+  mutate(Chromosome = Chromosome %>% 
+           factor(levels = Delta_freqs_whole_genome %>%
+                    select(Position, F4_stat) %>%
+                    transform_position_ade2tidy() %>% 
+                    separate(Chromosome, c("Chromosome", "SUPER", "SUPER_frag"), "_") %>%
+                    select(Chromosome) %>% 
+                    unique %>% 
+                    arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
+                    as.vector %>% unname %>% unlist)) %>% 
+  group_by(Chromosome) %>% 
+  summarise(bc_cum = max(Position)) %>% 
+  mutate(bp_add = lag(cumsum(bc_cum), default = 0))
+
+# We add this to the inversion delimitations to know where to place the inversions in the manhattan plot and prepare 
+# the table to be used with the geom_polygon function, requiring that the coordinates of the vertexes be specified.
+x1 <- Delim_inversions %>%
+  left_join(x, relationship = "many-to-one") %>%
+  mutate(bp_Pos_min_inv = Pos_min_inv + bp_add,
+         bp_Pos_max_inv = Pos_max_inv + bp_add) %>% 
+  select(Chromosome, bp_Pos_min_inv, bp_Pos_max_inv, Inversion) %>% 
+  pivot_longer(starts_with("bp_"), names_to = "Position", values_to = "x_value") %>% 
+  group_by(Chromosome, Inversion) %>% 
+  rbind(., .) %>% 
+  arrange(Chromosome, x_value) %>% 
+  cbind("y_value" = rep(c(0, 0.5, 0.5, 0), nrow(.)/4))
+
 ################## Plot the differences in allelic frequencies along genome  ##################
-delta_freqs <- (Delta_freqs_whole_genome %>% 
+delta_freqs <- Delta_freqs_whole_genome %>% 
                   select(Position, contains("Delta")) %>% 
                   pivot_longer(cols = contains("Delta"), names_to = "Population", values_to = "Delta_freqs") %>% 
                   mutate(Population = ifelse(Population == "Delta_freq_Sweden", "Suède", "France") %>% 
                            factor(levels = c("Suède", "France"))) %>% 
-                  plot_manhattan(Delta_freqs, facets = Population, size = 3, palette = c("grey71", "turquoise4"))) +
+                  thresholds_manhattan(aes(y = Delta_freqs, supp = Population), values = 0.3, size = 3, palette = c("grey71", "turquoise4")) +
+  geom_polygon(data = x1, aes(x=x_value, y=y_value, group = Inversion), color = NA, fill = "grey10") +
+  facet_col(vars(Population), scales = "free") +
   theme(text = element_text(size = 30)) +
-  labs(x = "Groupes de liaison",
+  labs(x = "Chromosome",
        y = expression(Delta * "freq"),
        tag = "(B)")
 
 ################## Plot the F4  ##################
-F4_plot <- (Delta_freqs_whole_genome %>% 
+F4_plot <- Delta_freqs_whole_genome %>% 
               select(Position, F4_stat) %>% 
-              plot_manhattan(F4_stat, size = 3, absolute = FALSE, palette = c("grey71", "turquoise4"))) +
-  labs(x = "Groupes de liaison",
+              thresholds_manhattan(aes(y = F4_stat), values = c(-0.09, 0.09),
+                                   size = 3, absolute = FALSE,
+                                   inversions = Delim_inversions,
+                                   palette = c("grey71", "turquoise4")) +
+  geom_polygon(data = x1, aes(x=x_value, y=y_value, group = Inversion), color = NA, fill = "grey10") +
+  labs(x = "Chromosome",
        y = "F4",
        tag = "(C)") +
   theme(text = element_text(size = 30)) +
@@ -210,7 +253,6 @@ for (chromosome in (SNP_positions$Chromosome %>% unique)){
   }
 }
 
-pca_result_per_bin <- read.csv("./Local_PCA_500k_bins.csv", header = TRUE, sep = "\t")
 pca_result_per_bin_modif <- pca_result_per_bin %>% 
   mutate(Chromosome = Chromosome %>% factor(levels = c("LG1_SUPER_1", "LG2_SUPER_2",
                                                        "LG3_SUPER_4", "LG4_SUPER_7",
@@ -311,11 +353,6 @@ local_pca <- pca_data_manhat %>%
                     labels = chromosome_delimitations_polygons$Color %>% unique) +
   new_scale_color() +
   geom_line(aes(x = bin_cum, y = Axis1 * 5, color = Habitat, group = Sample_Name), lwd = 0.1, alpha = 0.5) +
-  #geom_line(aes(x = bin_cum, y = Axis1 * 5, color = Length, group = Sample_Name), lwd = 0.2) +
-  #scale_color_gradientn(colours = c("#4e79a7","grey75","#f28e2b"),
-  #                      limits = c((metadata$Length %>% min)-0.01,
-  #                                 (metadata$Length %>% max)+0.01),
-  #                      breaks = c(8, 13, 18)) +
   scale_color_manual(name = "Habitat",
                      values = c("Exposé" = "orange2", "Transition" = "deeppink", "Abrité" = "dodgerblue3")) +
   scale_x_continuous(label = str_split_fixed(center_bin_chrom$Chromosome, "G", 2)[, 2],
@@ -325,7 +362,7 @@ local_pca <- pca_data_manhat %>%
         panel.background = element_blank(),
         axis.line = element_line(color = "black"),
         text = element_text(size = 30)) +
-  labs(x = "Groupes de liaison",
+  labs(x = "Chromosome",
        y = "Variations des scores\nindividuels sur le PC1",
        tag = "(A)") + 
   facet_col(facets = vars(Population), scales="free_y", space="free")+
