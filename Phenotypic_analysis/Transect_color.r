@@ -3,7 +3,6 @@ require("anyLib")
 anyLib(c("tidyverse", "readxl", "rmarkdown"))
 
 ################################ Useful functions ################################
-# Apply the three models to the colors (stable model, linear model and clinal model)
 source("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/Functions_optimise_plot_clines.r")
 
 ################################ Import metadata ################################
