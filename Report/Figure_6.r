@@ -9,7 +9,7 @@ chromosome_palette <- c("grey71", "turquoise4")
 ################## Useful functions  ##################
 "%!in%" <- function(x, y){!(x %in% y)}
 
-source("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################## Import the vcf file  ##################
 data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/filtering_vcf_files/Final_outputs/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
@@ -33,7 +33,7 @@ data@other$exposition <- data@other$exposition %>% droplevels()
 X <- scaleGen(data, NA.method="mean", scale=FALSE, center=TRUE)
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
