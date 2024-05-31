@@ -5,7 +5,7 @@ anyLib(c("tidyverse", "adegenet", "vcfR", "readxl", "statgenGWAS", "ggforce", "g
 
 
 ################## Useful functions  ##################
-source("../General_scripts/Functions_optimise_plot_clines.r")
+source("C:/Documents/Stage_M2_2024/General_scripts/Functions_optimisation_visualisation.r")
 
 ################################ Useful variables ################################
 # Color palette to be reused everywhere with the shell size
@@ -17,8 +17,7 @@ my_theme <- theme_bw() +
 chromosome_palette <- c("grey71", "turquoise4")
 
 ################## Import the vcf file  ##################
-# The path to the vcf file has to be changed
-data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/filtering_vcf_files/Final_outputs/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
+data <- read.vcfR("C:/Documents/Stage_M2_2024/Project/Genetic data/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
   vcfR2genind()
 
 # We use the summary function to calculate the Hobs of the data we imported
@@ -48,7 +47,7 @@ var_ax1 <- 11.09
 var_ax2 <- 5.19
 var_ax3 <- 0.97
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "C:/Documents/Stage_M2_2024/Project/Phenotypic analysis/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -97,6 +96,9 @@ metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
          Shell_color_naive = Shell_color_naive %>% factor(levels = c("Yellow", "Brown")),
          Shell_color_morphology = ifelse(! Shell_color_morphology %in% c("Banded", "Square"), "Uniform", "Banded"))
 
+################## Import the inversion delimitations  ##################
+Delim_inversions <- read.csv("../Genetic data/Delimitation_inversions.csv",
+                             header = TRUE, sep = "\t")
 
 ################## Plot PCA1 vs PCA2  ##################
 ax1_v_ax2 <- pca$li %>% 
@@ -117,7 +119,7 @@ ax1_v_ax2 <- pca$li %>%
   labs(x = paste0("Axe 2 (", var_ax2, " %)"),
        y = paste0("Axe 1 (", var_ax1, " %)"),
        tag = "(A)") +
-  xlim(-425, 310) +
+  xlim(-450, 310) +
   ylim(-410, 310) +
   my_theme
 
@@ -159,7 +161,7 @@ pc2_trans <- pca$li %>%
                          breaks=c(8, 13, 18)) +
   facet_col(facets = vars(Population), scales = "free") +
   labs(x = "Position le long du transect (m)",
-       y = paste0("Axe 2 (", var_ax2, " %)"),
+       y = "Coordonnées des\nindividus sur l'Axe 2",
        tag = "(C)") +
   my_theme
 
@@ -178,24 +180,59 @@ pc3_trans <- pca$li %>%
                          breaks=c(8, 13, 18)) +
   facet_col(facets = vars(Population), scales = "free") +
   labs(x = "Position le long du transect (m)",
-       y = paste0("Axe 3 (", var_ax3, " %)"),
+       y = "Coordonnées des\nindividus sur l'Axe 3",
        tag = "(D)") +
   my_theme
 
 ################## Manhattan plot of contributions to PC2 and PC3  ##################
-contribs <- (pca$co %>% 
-  rownames_to_column("Position") %>% 
-  mutate(Comp2 = abs(Comp2)) %>% 
-  select(Position, Comp2) %>%
-  select_good_SNPs(Comp2) %>% 
-  rbind(pca$co %>% 
-              rownames_to_column("Position") %>%
-              select_good_SNPs(Comp3) %>% 
-              mutate(Comp2 = -abs(Comp3)) %>% 
-              select(Position, Comp2)) %>%
-  plot_manhattan(Comp2, absolute = FALSE, palette = chromosome_palette)) +
+# First, we read the table for the inversion delimitations
+Delim_inversions <- read.csv("../Data/Delim_inversions.csv", header = TRUE, sep = "\t")
+# Then, we make a table containing the cumulative position of each chromosome
+x <- Delta_freqs_whole_genome %>%
+  select(Position, F4_stat) %>%
+  transform_position_ade2tidy() %>% 
+  separate(Chromosome, c("Chromosome", "SUPER", "SUPER_frag"), "_") %>% 
+  mutate(Chromosome = Chromosome %>% 
+           factor(levels = Delta_freqs_whole_genome %>%
+                    select(Position, F4_stat) %>%
+                    transform_position_ade2tidy() %>% 
+                    separate(Chromosome, c("Chromosome", "SUPER", "SUPER_frag"), "_") %>%
+                    select(Chromosome) %>% 
+                    unique %>% 
+                    arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
+                    as.vector %>% unname %>% unlist)) %>% 
+  group_by(Chromosome) %>% 
+  summarise(bc_cum = max(Position)) %>% 
+  mutate(bp_add = lag(cumsum(bc_cum), default = 0))
+
+# We add this to the inversion delimitations to know where to place the inversions in the manhattan plot and prepare 
+# the table to be used with the geom_polygon function, requiring that the coordinates of the vertexes be specified.
+x1 <- Delim_inversions %>%
+  left_join(x, relationship = "many-to-one") %>%
+  mutate(bp_Pos_min_inv = Pos_min_inv + bp_add,
+         bp_Pos_max_inv = Pos_max_inv + bp_add) %>% 
+  select(Chromosome, bp_Pos_min_inv, bp_Pos_max_inv, Inversion) %>% 
+  pivot_longer(starts_with("bp_"), names_to = "Position", values_to = "x_value") %>% 
+  group_by(Chromosome, Inversion) %>% 
+  rbind(., .) %>% 
+  arrange(Chromosome, x_value) %>% 
+  cbind("y_value" = rep(c(0, 0.5, 0.5, 0), nrow(.)/4))
+
+# Then, we plot the contribution of each SNP to the PCA axis.
+contribs <- pca$co %>% 
+               rownames_to_column("Position") %>% 
+               mutate(Comp2 = abs(Comp2)) %>% 
+               select(Position, Comp2) %>%
+               select_good_SNPs(Comp2) %>% 
+               rbind(pca$co %>% 
+                       rownames_to_column("Position") %>%
+                       select_good_SNPs(Comp3) %>% 
+                       mutate(Comp2 = -abs(Comp3)) %>% 
+                       select(Position, Comp2)) %>%
+               geom_manhattan(aes(y = Comp2), absolute = FALSE, palette = chromosome_palette) +
+  geom_polygon(data = x1, aes(x=x_value, y=y_value, group = Inversion), color = NA, fill = "grey10")+
   labs(y = "Contributions des SNPs à\nAxe 3 | Axe 2 ",
-       x = "Groupes de liaison",
+       x = "Chromosome",
        tag = "(E)") +
   geom_hline(yintercept = 0, color = "black", lwd = 0.9) +
   theme(text = element_text(size = 30))
