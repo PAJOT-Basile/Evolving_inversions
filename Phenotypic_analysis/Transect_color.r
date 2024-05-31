@@ -3,22 +3,8 @@ require("anyLib")
 anyLib(c("tidyverse", "readxl", "LaplacesDemon"))
 
 ################################ Useful functions ################################
-"%!in%" <- function(x, y){!("%in%"(x, y))}
-
-zip <- function(...){
-  mapply(list, ..., SIMPLIFY=FALSE)
-}
-
-enumerate <- function(...){
-  zip(ix=seq_along(..1), ...)
-}
-
 # Apply the three models to the colors (stable model, linear model and clinal model)
 source("../General_scripts/Functions_optimise_plot_clines.r")
-
-################################ Useful variables ################################
-# Color palette to be reused everywhere with the shell colors
-shell_palette = c("black", "grey28", "brown", "saddlebrown", "wheat4", "gold", "goldenrod", "khaki2", "grey", "blue", "rosybrown4")
 
 ################################ Import metadata ################################
 metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
