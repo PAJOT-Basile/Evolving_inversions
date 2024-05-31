@@ -219,7 +219,7 @@ clineflog <-  function(x, g, n, centre, width, left, right){
 ################################################################################
 ####################### 2. Phenotypic cline  ###################################
 ################################################################################
-cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisation=TRUE){
+cline_phen <- function(x, phen = 0, centre, width, left, right, sl, sc, sr, optimisation=TRUE){
   #' Represent phenotypic cline
   #' 
   #' This function estimates a sigmoid cline for phenotypic variations
@@ -260,11 +260,11 @@ cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisa
   #'@export
   
   # The first step is to calculte the natural width of the cline: d
-  d <- position - centre
+  d <- x - centre
   # p_x is the frequency cline between 0 and 1
   p_x <- 1 / (1 + exp(0 - 4 * (d) / width))
   # z_x is the classic cline function adapted to the observed data frequencies. 
-  z_x <- left + (right-left)*p_x  
+  z_x <- left + (right-left) * p_x  
   # s_x is the variance of the model (assumes variances are additive) 
   s_x <- sqrt(sl^2 + 4 * p_x * (1 - p_x) * sc^2 + (p_x^2) * (sr^2 - sl^2))
   # If the optimization argument is set to true (default), the calculation of 
@@ -280,8 +280,7 @@ cline_phen <- function(x, phen, centre, width, left, right, sl, sc, sr, optimisa
   if (!isTRUE(optimisation)){
     # Here, we directly add the calculated data into a data frame, so we can 
     # plot it
-    phen_cline <- data.frame(phen_cline = z_x, sd_cline = s_x, position = position)
+    phen_cline <- data.frame(phen_cline = z_x, sd_cline = s_x, position = x)
     return(phen_cline)
   }
 }
-
