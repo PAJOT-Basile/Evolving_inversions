@@ -21,7 +21,7 @@ source("../General_scripts/Functions_optimise_plot_clines.r")
 shell_palette = c("black", "grey28", "brown", "saddlebrown", "wheat4", "gold", "goldenrod", "khaki2", "grey", "blue", "rosybrown4")
 
 ################################ Import metadata ################################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
