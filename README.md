@@ -24,7 +24,7 @@ This folder contains two scripts containing all the functions that we created to
 
 This folder contains all the code required to reproduce the figures and tables used in the report.
 
-## [Data](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Data)
+## 5. [Data](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Data)
 
 This folder contains some of the data used and produced in this internship.
 
