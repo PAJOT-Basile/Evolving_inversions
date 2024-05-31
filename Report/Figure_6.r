@@ -6,15 +6,12 @@ anyLib(c("tidyverse", "adegenet", "vcfR", "readxl", "statgenGWAS", "ggforce", "g
 ################## Useful variables  ##################
 # Palette to use for the chromosome colors
 chromosome_palette <- c("grey71", "turquoise4")
-
-# Basic theme to use in the graphs
-my_theme <- theme_bw() +
-  theme(text = element_text(size = 20))
 ################## Useful functions  ##################
-source("../General_scripts/Functions_optimise_plot_clines.r")
+"%!in%" <- function(x, y){!(x %in% y)}
+
+source("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/Functions_optimise_plot_clines.r")
 
 ################## Import the vcf file  ##################
-# The path to the vcf file has to be changed
 data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/filtering_vcf_files/Final_outputs/Fully_filtered_thinned_Hobs.vcf.gz") %>% 
   vcfR2genind()
 
@@ -36,7 +33,7 @@ data@other$exposition <- data@other$exposition %>% droplevels()
 X <- scaleGen(data, NA.method="mean", scale=FALSE, center=TRUE)
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -85,6 +82,39 @@ metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
          Shell_color_naive = Shell_color_naive %>% factor(levels = c("Yellow", "Brown")),
          Shell_color_morphology = ifelse(! Shell_color_morphology %in% c("Banded", "Square"), "Uniform", "Banded"))
 
+################## Import the inversion delimitations  ##################
+# First, we read the table for the inversion delimitations
+Delim_inversions <- read.csv("../Data/Delim_inversions.csv", header = TRUE, sep = "\t")
+# Then, we make a table containing the cumulative position of each chromosome
+x <- Delta_freqs_whole_genome %>%
+  select(Position, F4_stat) %>%
+  transform_position_ade2tidy() %>% 
+  separate(Chromosome, c("Chromosome", "SUPER", "SUPER_frag"), "_") %>% 
+  mutate(Chromosome = Chromosome %>% 
+           factor(levels = Delta_freqs_whole_genome %>%
+                    select(Position, F4_stat) %>%
+                    transform_position_ade2tidy() %>% 
+                    separate(Chromosome, c("Chromosome", "SUPER", "SUPER_frag"), "_") %>%
+                    select(Chromosome) %>% 
+                    unique %>% 
+                    arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
+                    as.vector %>% unname %>% unlist)) %>% 
+  group_by(Chromosome) %>% 
+  summarise(bc_cum = max(Position)) %>% 
+  mutate(bp_add = lag(cumsum(bc_cum), default = 0))
+
+# We add this to the inversion delimitations to know where to place the inversions in the manhattan plot and prepare 
+# the table to be used with the geom_polygon function, requiring that the coordinates of the vertexes be specified.
+x1 <- Delim_inversions %>%
+  left_join(x, relationship = "many-to-one") %>%
+  mutate(bp_Pos_min_inv = Pos_min_inv + bp_add,
+         bp_Pos_max_inv = Pos_max_inv + bp_add) %>% 
+  select(Chromosome, bp_Pos_min_inv, bp_Pos_max_inv, Inversion) %>% 
+  pivot_longer(starts_with("bp_"), names_to = "Position", values_to = "x_value") %>% 
+  group_by(Chromosome, Inversion) %>% 
+  rbind(., .) %>% 
+  arrange(Chromosome, x_value) %>% 
+  cbind("y_value" = rep(c(0, 0.5, 0.5, 0), nrow(.)/4))
 ################## Make a map of the position of each snp on the chromosomes  ##################
 Delta_freqs_whole_genome <- get_delta_freqs_and_F4(genetic_data = data,
                                                    SNP_subset = NULL,
@@ -232,44 +262,50 @@ GWAS_sweden <- runSingleTraitGwas(gData_sweden)
 
 ################## Plot the results  ##################
 ### Size
-Size_plot <- (GWAS_france$GWAResult$Pheno_france %>% 
-   filter(trait  == "Length") %>% 
-   select(snp, pValue) %>% 
-   rename(Position = snp) %>% 
-   mutate(logp_val = -log10(pValue),
-          Population = "France") %>% 
-   rbind(GWAS_sweden$GWAResult$Pheno_sweden %>%
-           filter(trait == "Length") %>% 
-           select(snp, pValue) %>% 
-           rename(Position = snp) %>% 
-           mutate(logp_val = -log10(pValue),
-                  Population = "Sweden")) %>% 
-   mutate(Population = Population %>% factor(levels = c("Sweden", "France"))) %>% 
-   plot_manhattan(logp_val, palette = chromosome_palette, facets = Population)) +
+Size_plot <- GWAS_france %>% 
+                filter(trait  == "Length") %>% 
+                select(snp, pValue) %>% 
+                rename(Position = snp) %>% 
+                mutate(logp_val = -log10(pValue),
+                       Population = "France") %>% 
+                rbind(GWAS_sweden %>%
+                        filter(trait == "Length") %>% 
+                        select(snp, pValue) %>% 
+                        rename(Position = snp) %>% 
+                        mutate(logp_val = -log10(pValue),
+                               Population = "Sweden")) %>% 
+  mutate(Population = ifelse(Population == "Sweden", "Suède", "France") %>% 
+           factor(levels = c("Suède", "France"))) %>% 
+  geom_manhattan(aes(y = logp_val, supp = Population), palette = chromosome_palette) +
   geom_hline(yintercept = 5, color = "black", lwd = 0.9, lty = "dashed") +
-  labs(x = "Groupes de liaison",
+  geom_polygon(data = x1, aes(x=x_value, y=y_value, group = Inversion), color = NA, fill = "grey10") +
+  facet_col(vars(Population)) +
+  labs(x = "Chromosome",
        y = expression("log"[10]* "(p-value)"),
        tag = "(A)") +
   ylim(0, 7) +
   theme(text = element_text(size = 20))
 
 ### Color
-Color_plot <- (GWAS_france$GWAResult$Pheno_france %>% 
-    filter(trait  == "Shell_color_naive") %>% 
-    select(snp, pValue) %>% 
-    rename(Position = snp) %>% 
-    mutate(logp_val = -log10(pValue),
-           Population = "France") %>% 
-    rbind(GWAS_sweden$GWAResult$Pheno_sweden %>%
-            filter(trait == "Shell_color_naive") %>% 
-            select(snp, pValue) %>% 
-            rename(Position = snp) %>% 
-            mutate(logp_val = -log10(pValue),
-                   Population = "Sweden")) %>% 
-    mutate(Population = Population %>% factor(levels = c("Sweden", "France"))) %>% 
-    plot_manhattan(logp_val, palette = chromosome_palette, facets = Population)) +
+Color_plot <- GWAS_france %>% 
+                 filter(trait  == "Shell_color_naive") %>% 
+                 select(snp, pValue) %>% 
+                 rename(Position = snp) %>% 
+                 mutate(logp_val = -log10(pValue),
+                        Population = "France") %>% 
+                 rbind(GWAS_sweden %>%
+                         filter(trait == "Shell_color_naive") %>% 
+                         select(snp, pValue) %>% 
+                         rename(Position = snp) %>% 
+                         mutate(logp_val = -log10(pValue),
+                                Population = "Sweden")) %>% 
+                 mutate(Population = ifelse(Population == "Sweden", "Suède", "France") %>% 
+                          factor(levels = c("Suède", "France"))) %>% 
+                 geom_manhattan(aes(y = logp_val, supp = Population), palette = chromosome_palette) +
   geom_hline(yintercept = 5, color = "black", lwd = 0.9, lty = "dashed") +
-  labs(x = "Groupes de liaison",
+  geom_polygon(data = x1, aes(x=x_value, y=y_value, group = Inversion), color = NA, fill = "grey10") +
+  facet_col(vars(Population)) +
+  labs(x = "Chromosome",
        y = expression("log"[10]* "(p-value)"),
        tag = "(B)") +
   ylim(0, 25) +
