@@ -3,7 +3,7 @@ require("tidyverse")
 
 ############################ Useful functions ##########################
 
-source("C:/Documents/Stage_M2_2024/General_scripts/Functions_optimisation_visualisation.r")
+source("../General_scripts/Functions_optimisation_visualisation.r")
 
 ############################ Load inputs to HMM ##########################
 input_delta_freqs_france <- read.csv("./Whole_genome_france_freqs.csv",
