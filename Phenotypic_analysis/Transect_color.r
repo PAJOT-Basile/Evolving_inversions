@@ -6,7 +6,7 @@ anyLib(c("tidyverse", "readxl", "rmarkdown"))
 source("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/Functions_optimise_plot_clines.r")
 
 ################################ Import metadata ################################
-metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -47,14 +47,19 @@ metadata <- read_excel(path = "../Data/data_Fabalis_resequencing_Basile.xlsx",
   filter(Single_location %in% c("FRA_LAM_n", "SWE_LOK_n")) %>% 
   mutate(Single_location = ifelse(Single_location == "FRA_LAM_n", "France", "Sweden") %>% factor(levels = c("Sweden", "France")))
 
+
+
 # Deal with missing metadata (drop lines that have less than the calculated threshold of 5% of missing metadata)
 threshold <- ((metadata %>% nrow) * .05) %>% floor
 metadata <- metadata %>% drop_na(((metadata %>% is.na %>% colSums) < threshold) %>% names)
 
 # Modify the colors to a bi-allelic gene
 Shell_color <- metadata$Shell_color
+
+
 metadata$Shell_color_naive_color <- str_split_fixed(string=Shell_color, pattern = "/", n=2)[, 1]
 metadata$Shell_color_morphology <- str_split_fixed(string=Shell_color, pattern = "/", n=2)[, 2]
+
 metadata <- metadata %>% 
   mutate(Shell_color_naive_color = ifelse(Shell_color_naive_color %in% c("Yellow", "White", "Grey"), "Yellow", Shell_color_naive_color),
          Shell_color_morphology = ifelse(Shell_color_naive_color == "Banded", "Banded", Shell_color_morphology),
@@ -324,163 +329,5 @@ color_table <- data1_color %>%
   ungroup %>% 
   select(Pays, "Zone abritée", "Zone exposée", "Centre du cline", "Largeur du cline") %>% 
   paged_table()
-
-color_table
-  
-# Merge the three dataframes and calculate the AIC for each model
-data1 <- metadata %>% 
-  merge(Stable_model_coef, by="Single_location") %>% 
-  merge(Linear_model_coefs, by="Single_location") %>% 
-  merge(Clinal_model_color, by="Single_location") %>% 
-  group_by(Single_location) %>% 
-  mutate(AIC_stable_color = mle2(stable, list(p_all = p_brown_location %>% unique),
-                           data=list(x=LCmeanDist, g=Genotype_shell_color_naive, n=1),
-                           method="L-BFGS-B",
-                           upper=list(p_all=0.999),
-                           lower=list(p_all=0.001)) %>% AIC,
-         AIC_linear_color = mle2(linear, list(p_left = Left_color %>% unique,
-                                           p_right = Right_color %>% unique),
-                              data=list(x=LCmeanDist, g=Genotype_shell_color_naive, n=1),
-                              method="L-BFGS-B",
-                              upper=list(p_left=0.999, p_right=0.999),
-                              lower=list(p_left=0.001, p_right=0.001)) %>% AIC,
-         AIC_cline_color = mle2(clinef,list(centre=Centre_color %>% unique,
-                                            width=Width_color %>% unique,
-                                            left=Left_color %>% unique,
-                                            right=Right_color %>% unique),
-                                data=list(x=LCmeanDist,
-                                          g=Genotype_shell_color_naive,
-                                          n=1),
-                                method="L-BFGS-B",
-                                upper=list(centre=max(LCmeanDist),width=max(LCmeanDist)*2,
-                                           left=0.999,right=0.999),
-                                lower=list(centre=Min_centre_color %>% unique,width=Min_width_color %>% unique,left=0.001,right=0.001)) %>% AIC) %>% 
-  ungroup()
-
-# Getting confidence intervals for the colors
-Confidence_interval_cline_size <- data1 %>% 
-  group_by(Single_location) %>% 
-  bow(tie(Centre_2.5, Width_2.5, Left_2.5, Right_2.5, Centre_97.5, Width_97.5, Left_97.5, Right_97.5) :=
-        mle2(clinef, list(centre=Centre_color %>% unique,
-                          width =Width_color %>% unique,
-                          left=Left_color %>% unique,
-                          right=Right_color %>% unique),
-             data=list(x=LCmeanDist,
-                       g=Genotype_shell_color_naive,
-                       n=1),
-             method="L-BFGS-B",
-             upper=list(centre=max(LCmeanDist), width=max(LCmeanDist)*2, left=0.999, right=0.999),
-             lower=list(centre=Min_centre_color %>% unique, width=Min_width_color %>% unique, left=0.001, right=0.001)) %>%
-        confint()) %>% 
-  as.data.frame() %>% 
-  group_by(Single_location) %>% 
-  mutate(Width_ci = ifelse(max(Width_2.5, Width_97.5, na.rm=TRUE) == -Inf, NA, max(Width_2.5, Width_97.5, na.rm=TRUE)),
-         Left_2.5i = min(Left_2.5, Left_97.5, na.rm=TRUE),
-         Right_2.5i = min(Right_2.5, Right_97.5, na.rm=TRUE),
-         Centre_2.5i = ifelse(Left_2.5i > Right_2.5i, ifelse(min(Centre_2.5, Centre_97.5, na.rm=TRUE) == Inf, NA, min(Centre_2.5, Centre_97.5, na.rm=TRUE)), max(Centre_2.5, Centre_97.5, na.rm=TRUE)),
-         Left_97.5 = max(Left_2.5, Left_97.5, na.rm=TRUE),
-         Right_97.5 = max(Right_2.5, Right_97.5, na.rm=TRUE),
-         Centre_97.5 = ifelse(Left_2.5i > Right_2.5i, ifelse(max(Centre_2.5, Centre_97.5, na.rm=TRUE) == -Inf, NA, max(Centre_2.5, Centre_97.5, na.rm=TRUE)), min(Centre_2.5, Centre_97.5, na.rm=TRUE))) %>% 
-  select(-c(Left_2.5, Right_2.5, Centre_2.5)) %>% 
-  rename(Left_2.5 = Left_2.5i,
-         Right_2.5 = Right_2.5i,
-         Centre_2.5 = Centre_2.5i)
-
-# Prepare the plotting of results for the clinal model
-LAMn <- data1 %>% filter(Single_location == "FRA_LAM_n")
-LOKn <- data1 %>% filter(Single_location == "SWE_LOK_n")
-LOKs <- data1 %>% filter(Single_location == "SWE_LOK_s")
-dfs <- list(LAMn, LOKn, LOKs)
-cline_fit_plots <- list()
-for (i in enumerate(dfs)){
-  df <- i[2] %>% as.data.frame()
-  cline_fit_plots <- append(
-    cline_fit_plots, list(
-      clinef(x=seq(min(df$LCmeanDist), max(df$LCmeanDist), by=1),
-             centre=df$Center %>% unique(),
-             width=df$Width %>% unique(),
-             left=df$Left %>% unique(),
-             right=df$Right %>% unique(),
-             plotting=TRUE,
-             optimisation=FALSE)
-    )
-  )
-}
-
-# Get the maximum lengths of each group 
-Max_lengths_per_location <- data1 %>% 
-  group_by(Single_location) %>% 
-  summarise(Max_Length = max(Length))
-LAMn_plot <- cline_fit_plots[1] %>% 
-  as.data.frame() %>% 
-  mutate(Single_location = "FRA_LAM_n",
-         Max_Length = Max_lengths_per_location$Max_Length[Max_lengths_per_location$Single_location == "FRA_LAM_n"])
-LOKn_plot <- cline_fit_plots[2] %>% 
-  as.data.frame() %>% 
-  mutate(Single_location = "SWE_LOK_n",
-         Max_Length = Max_lengths_per_location$Max_Length[Max_lengths_per_location$Single_location == "SWE_LOK_n"])
-LOKs_plot <- cline_fit_plots[3] %>% 
-  as.data.frame() %>% 
-  mutate(Single_location = "SWE_LOK_s",
-         Max_Length = Max_lengths_per_location$Max_Length[Max_lengths_per_location$Single_location == "SWE_LOK_s"])
-
-Plotting_data <- rbind(LAMn_plot, LOKn_plot, LOKs_plot) %>%
-  # We add a correction for a dominance effect on the brown allele
-  mutate(pheno_cline_p = sqrt(1 - phen_cline),
-    pheno_cline_q = 1 - pheno_cline_p,
-    pheno_cline_homo_brown = pheno_cline_q **2,
-    pheno_cline_homo_yellow = pheno_cline_p **2,
-    pheno_cline_hetero = 2 * pheno_cline_p * pheno_cline_q)
-
-
-
-data1 %>% 
-  ggplot(aes(x=LCmenaDist)) +
-  geom_point(data = Plotting_data, aes(x=position, y=sqrt(phen_cline)), color="purple") +
-  geom_point(data=Plotting_data, aes(x=position, y=phen_cline), color="brown") +
-  facet_col(facets = vars(Single_location), scales="free_x", space="free")
-  
-
-# Plot the results
-data1 %>% 
-  ggplot(aes(x=LCmeanDist)) +
-  geom_point(aes(y=Genotype_shell_color_naive)) +
-  geom_point(data= Plotting_data, aes(x=position, y=phen_cline, color = "Observed brown frequency")) +
-  geom_point(data=Plotting_data, aes(x=position, y=(phen_cline + pheno_cline_hetero/2)/max(phen_cline + pheno_cline_hetero/2), color = "Corrected brown allele \nfrequency for a yellow \ndominant allele"))+
-  facet_col(facets = vars(Single_location), scales="free", space="free") +
-  labs(title = "Variation in color frequency along the transect",
-       x = "Position along the transect (m)",
-       y = "Frequency of color brown") +
-  theme_bw() +
-  scale_color_manual(name = "Curve",
-                     breaks = c("Observed brown frequency", "Corrected brown allele \nfrequency for a yellow \ndominant allele"),
-                     values = c("Observed brown frequency" = "brown", "Corrected brown allele \nfrequency for a yellow \ndominant allele" = "navyblue")) +
-  theme(text = element_text(size=20))
-
-#TODO: Find the confidence intervals of the clines
-
-# Recapitulation tables
-AIC_table_color <- data1 %>% 
-  group_by(Single_location) %>% 
-  summarise(AIC_stable = AIC_stable_color %>% unique %>% round(digits=1),
-            AIC_linear = AIC_linear_color %>% unique %>% round(digits=1),
-            AIC_cline = AIC_cline_color %>% unique %>% round(digits=1),
-            Delta_AIC_Stable = (AIC_stable_color - AIC_cline_color) %>% unique %>% round(digits=1),
-            Delta_AIC_linear = (AIC_linear_color - AIC_cline_color) %>% unique %>% round(digits=1)) %>% 
-  paged_table()
-
-AIC_table_color
-
-
-color_table <- data1 %>%
-  group_by(Single_location) %>%
-  mutate(Delta_AIC_stable = AIC_stable_color - AIC_cline_color,
-         Delta_AIC_linear = AIC_linear_color - AIC_cline_color) %>%
-  summarise(Centre_color = Center %>% unique %>% round(digits=1),
-            Left_color = Left %>% unique %>% round(digits=1),
-            Right_color = Right %>% unique %>% round(digits=1),
-            Width_color = Width %>% unique %>% round(digits=1),
-            Delta_AIC_stable = Delta_AIC_stable %>% unique %>% round(digits=1),
-            Delta_AIC_linear = Delta_AIC_linear %>% unique %>% round(digits=1))
 
 color_table
