@@ -2,7 +2,7 @@
 
 
 This directory contains all the scripts allowing to replicate analysis showing parallelism in ecotype differenciation between two ecotypes of _Littorina fabalis_ in two locations: Sweden and France. As the Swedish population was already studied in a previous paper [(Le Moan et al, 2024)](https://academic.oup.com/evlett/advance-article/doi/10.1093/evlett/qrae014/7656805), this population is taken as a reference and always presented first.
-This directory is composed of 4 folders.
+This directory is composed of 7 folders.
 
 
 ## 1. [Snakemake_processins_of_short-read_data](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Snakemake_processing_of_short-read_data#snakemake-processing-of-short-read-sequencing-data-from-littorina-snails)
@@ -23,3 +23,15 @@ This folder contains two scripts containing all the functions that we created to
 ## 4. [Report](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Report#report)
 
 This folder contains all the code required to reproduce the figures and tables used in the report.
+
+## [Data](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Data)
+
+This folder contains some of the data used and produced in this internship.
+
+## 5. [HMM](https://github.com/PAJOT-Basile/L_fabalis/tree/main/HMM)
+
+This folder contains the scripts used to run the HMM on the two populations, as well as the scripts allowing to prepare this analysis and the analysis of the HMM output.
+
+## 6. [Cline analysis](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Cline_analysis)
+
+This folder contains the script used to run the clinal analysis on all the highly differenciated SNPs in the genome.
