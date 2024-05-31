@@ -1,6 +1,6 @@
 # Libraries
 require("anyLib")
-anyLib(c("tidyverse", "readxl", "ggh4x", "bbmle", "tie", "ggforce", "ggpubr", "ggnewscale", "LaplacesDemon"))
+anyLib(c("tidyverse", "readxl", "LaplacesDemon"))
 
 ################################ Useful functions ################################
 "%!in%" <- function(x, y){!("%in%"(x, y))}
