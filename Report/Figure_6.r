@@ -192,7 +192,7 @@ Pheno_sweden <- metadata %>%
 #                                " --relatedness",
 #                                " --keep /shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/FST/French_pop.txt",
 #                                " --out /shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/GWAS/French_relatedness")))
-relatedness_france <- read.table("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/GWAS/French_relatedness.relatedness", header = TRUE) %>% 
+relatedness_france <- read.table("../Data/French_relatedness.relatedness", header = TRUE) %>% 
   rename(Relatedness = RELATEDNESS_AJK) %>% 
   pivot_wider(names_from = INDV2, values_from = Relatedness) %>% 
   column_to_rownames("INDV1")
@@ -203,7 +203,7 @@ relatedness_france <- read.table("/shared/projects/pacobar/finalresult/bpajot/ge
 #                                " --relatedness",
 #                                " --keep /shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/FST/Swedish_pop.txt",
 #                                " --out /shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/GWAS/Swedish_relatedness")))
-relatedness_sweden <- read.table("/shared/projects/pacobar/finalresult/bpajot/genomic_analysis/scripts/01_Filtering_stats_vcf/GWAS/Swedish_relatedness.relatedness", header = TRUE) %>% 
+relatedness_sweden <- read.table("../Data/Swedish_relatedness.relatedness", header = TRUE) %>% 
   rename(Relatedness = RELATEDNESS_AJK) %>% 
   pivot_wider(names_from = INDV2, values_from = Relatedness) %>% 
   column_to_rownames("INDV1")
