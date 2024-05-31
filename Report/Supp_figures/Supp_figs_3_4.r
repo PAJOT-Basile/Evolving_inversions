@@ -14,7 +14,7 @@ data@other$exposition[which(data@other$exposition == "TRANSI")] <- "TRANS" %>% a
 data@other$exposition <- data@other$exposition %>% droplevels()
 
 ############################ Import metadata ##########################
-metadata <- read_excel(path = "C:/Documents/Stage_M2_2024/Project/Phenotypic analysis/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
