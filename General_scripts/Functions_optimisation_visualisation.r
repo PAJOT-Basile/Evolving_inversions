@@ -1,6 +1,6 @@
 # Import libraries
 #install.packages("anyLib")
-require("anyLib", lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/")
+require("anyLib")
 anyLib(c("tidyverse", "ggforce", "viridis", "ggnewscale", "LaplacesDemon", "tie", "bbmle", "zeallot", "docstring"))
 
 # Import functions from the `Cline_functions.R` script
