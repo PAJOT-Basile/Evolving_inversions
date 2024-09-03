@@ -8,7 +8,7 @@ This directory is composed of 7 folders.
 ## 1. [Snakemake_processins_of_short-read_data](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Snakemake_processing_of_short-read_data#snakemake-processing-of-short-read-sequencing-data-from-littorina-snails)
 
 
-This folder is a duplicate of the repository [Snakemake_processing_of_short-read_data](https://github.com/PAJOT-Basile/Snakemake_processing_of_short-read_data). 
+This folder is a separate repository [Snakemake_processing_of_short-read_data](https://github.com/PAJOT-Basile/Snakemake_processing_of_short-read_data). 
 It contains all the necessary scripts to run the analysis of raw data for shrot read sequencing on a high-performance computing (HPC) cluster. It allows to use at its best the ressources of the cluster to clean raw data, map it on a reference genome and extract the parts we want to use for a genomics analysis.
 This folder contains all the necessary instructions to run it on any short-read sequencing data (supposing you have a reference genome to map it on).
 
