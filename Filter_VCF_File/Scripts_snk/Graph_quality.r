@@ -5,6 +5,7 @@ for (lib in libraries){
   pacman::p_load(lib, character.only = TRUE)
 }
 
+
 # Take inputs from the snakemake program
 parser <- ArgumentParser(description = "This program is used to create a table of sites to keep on the filtration on Strand Bias")
 
@@ -109,7 +110,6 @@ MISSg <- MISS %>%
 print("    - Done plotting missing data")    
 
 plot_raw <- ggarrange(AFg, DPg, QUALg, SPg, MISSg, ncol=2, nrow=3)
-plot_raw <- annotate_figure(plot_raw, top = text_grob("Quality check on raw data set", face = "bold", size = 14))
 
 print("Done plotting")
 ##################################### Save the plot  ##################################
