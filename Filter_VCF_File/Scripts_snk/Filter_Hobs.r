@@ -1,9 +1,14 @@
+# Add a miror to download the libraries if needed
+utils::setRepositories(ind = 0, addURLs = c(CRAN = "https://cran.irsn.fr/"))
 # Install libraries if needed and load them
 libraries <- c("tidyverse", "adegenet", "pegas", "vcfR", "argparse")
+
 if (!require("pacman")) install.packages("pacman")
 for (lib in libraries){
   pacman::p_load(lib, character.only = TRUE)
 }
+
+
 
 ############################ Parse and use arguments ##########################
 # Take inputs from the snakemake program
@@ -17,8 +22,8 @@ parser$add_argument("--tmp", "-t", help = "The temporary folder")
 
 xargs <- parser$parse_args()
 
-input_path <- xargs$input
-output_path <- xargs$output
+input <- xargs$input
+output <- xargs$output
 Hobs_thres <- xargs$Hobs
 tmp <- xargs$tmp
 
@@ -28,8 +33,10 @@ vcftools <- "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools"
 # Get the name of the output directory
 outdir__ <- sub("[^/]+$", "", output)
 # get the name of the region that is to be used
-region_name <- (output %> %>%
-    str_split_fixed(., "/", 9))[, 9] %>%
+nb_seps__ <- output %>%
+    str_count("/")
+region_name <- (output %>%
+    str_split_fixed(., "/", nb_seps__ + 1))[, nb_seps__ + 1] %>%
     str_remove_all("VCF_File_|.vcf.gz")
 ############################ Import vcf file ##########################
 data <- read.vcfR(input) %>% 
@@ -52,15 +59,15 @@ cbind(
          Position_chrom = V4) %>% 
   mutate(Where = paste(Chrom, Super, Super_frag, sep="_")) %>% 
   select(Where, Position_chrom) %>% 
-  write.table(paste0(outdir__, "Filter_vcf_Hobs", region_name, ".tsv"), quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t")
+  write.table(paste0(outdir__, "Filter_vcf_Hobs_", region_name, ".tsv"), quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t")
 
 
 
 system2(vcftools,
         args = paste0("--gzvcf ",
-                      vcf_file,
-                      " --positions", outdir__, "Filter_vcf_Hobs.tsv",
+                      input,
+                      " --positions ", outdir__, "Filter_vcf_Hobs_", region_name, ".tsv",
                       " --recode",
                       " --stdout",
                       " --temp ", tmp,
-                      " | gzip -c > "output))
+                      " | gzip -c > ", output))
