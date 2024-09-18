@@ -1,5 +1,5 @@
 ######################## Libraries ###############################
-import os
+import os, sys
 import pandas as pd
 import numpy as np
 
@@ -8,21 +8,36 @@ from Scripts_snk.snakemake_functions import *
 
 ######################## Import values from the configuration file  ###############################
 raw_vcf_file = config["raw_vcf_file"]
-raw_data_path = config["raw_data_path"]
 input_reference_genome = config["Reference_genome"]
 working_directory = config["Working_directory"]
+pop_map_path = config["pop_maps"]
 
 tmp_path = config["tmp_path"]
 
 output_path = config["output_path"]
 
+# Check if the input file exists
+if not os.path.isdir(pop_map_path):
+    sys.exit(
+        """
+        No valid Pop_map directory is given. Please create a Pop_map directory containing one text file per population you want to
+        add to the analysis. The text file should contain the names of the samples you want to use, without the file extensions.
+        Several populations may be given in this Pop_map directory.
+        """
+    )
 ###################################### Global variables  ######################################
 ######################## Get the region names  ###############################
 REGIONS = glob_wildcards(raw_vcf_file + "VCF_File_{region}.vcf.gz")
 
+######################## Get the names of the popmaps  ###############################
+POP_MAP = glob_wildcards(pop_map_path + "{populations}.txt")
+
 ######################## Get the sample names  ###############################
-SAMPLES = glob_wildcards(raw_data_path + config["samples"])
-print(f"Samples:  {SAMPLES.sample}\n\n\n")
+SAMPLES = {}
+for population in POP_MAP.populations:
+    with open(pop_map_path + population + ".txt", "r") as f:
+        SAMPLES[population] = f.read().splitlines()
+    print(f"Population:   {population}\n\tSamples:   {SAMPLES[population]}\n\n\n")
 
 ######################## Loop variables  ###############################
 # These variables will be used to run several identical rules at different
@@ -55,28 +70,28 @@ def get_mem_mb_plot_21(wildcards, input, attempt):
 rule all:
     input:
         # Count_SNPs
-        expand(output_path + "10_Stats/{step}/Position_count.csv", step=STEPS),
+        expand(output_path + "{population}/10_Stats/{step}/Position_count.csv", population = POP_MAP.populations, step=STEPS),
         # Concatenate_vcfs
-        expand(output_path + "0{step}/VCF_File.vcf.gz", step=["2_Mac", "3_Biallelic", "4_Missing", "5_QUAL", "6_DP", "7_SP", "8_Maf"]),
+        expand(output_path + "{population}/0{step}/VCF_File.vcf.gz", population = POP_MAP.populations, step=["2_Mac", "3_Biallelic", "4_Missing", "5_QUAL", "6_DP", "7_SP", "8_Maf", "9_Hobs"]),
         # Stats
-        expand(output_path + "10_Stats/{step}/vcfstats.QUAL.txt", step=STEPS),
-        expand(output_path + "10_Stats/{step}/vcfstats.SP.txt", step=STEPS),
-        expand(output_path + "10_Stats/{step}/vcfstats.AF.txt", step=STEPS),
-        expand(output_path + "10_Stats/{step}/vcfstats.DP.txt", step=STEPS),
-        expand(output_path + "10_Stats/{step}/Quality_distribution.png", step=STEPS),
+        expand(output_path + "{population}/10_Stats/{step}/vcfstats.QUAL.txt", population = POP_MAP.populations, step=STEPS),
+        expand(output_path + "{population}/10_Stats/{step}/vcfstats.SP.txt", population = POP_MAP.populations, step=STEPS),
+        expand(output_path + "{population}/10_Stats/{step}/vcfstats.AF.txt", population = POP_MAP.populations, step=STEPS),
+        expand(output_path + "{population}/10_Stats/{step}/vcfstats.DP.txt", population = POP_MAP.populations, step=STEPS),
+        expand(output_path + "{population}/10_Stats/{step}/Quality_distribution.png", population = POP_MAP.populations, step=STEPS),
 
 
 ######################## Filter only interested samples  ###############################
-rule N01_LOKn_LAMn:
+rule N01_Select_indivs:
     input:
         raw_vcf_file + "VCF_File_{region}.vcf.gz"
     output:
-        temp(tmp_path + "01_MAC/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/01_MAC/VCF_File_{region}.vcf.gz")
     params:
-        indivs = expand("--indv {sample}", sample=SAMPLES.sample),
+        indivs = lambda wildcards: expand("--indv {sample}", sample=SAMPLES[wildcards.population]),
         tmp_path = tmp_path
     message:
-        "Filtering Max Allele Count for {wildcards.region}"
+        "Filtering Max Allele Count for {wildcards.region} and {wildcards.population}"
     conda:
         working_directory + "Configuration_files/envs/Environment.yaml"
     shell:
@@ -88,12 +103,12 @@ rule N01_LOKn_LAMn:
 ######################## Remove Indels and multiallelic sites  ###############################
 rule N02_Remove_Indels:
     input:
-        rules.N01_LOKn_LAMn.output
+        rules.N01_Select_indivs.output
     output:
-        temp(tmp_path + "02_Biall/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/02_Biall/VCF_File_{region}.vcf.gz")
     threads: 10
     message:
-        "Removing Indels and multiallelic sites for {wildcards.region}"
+        "Removing Indels and multiallelic sites for {wildcards.region} and {wildcards.population}"
     conda:
         working_directory + "Configuration_files/envs/Environment.yaml"
     shell:
@@ -107,7 +122,7 @@ rule N03_Filter_missing_rate:
     input:
         rules.N02_Remove_Indels.output
     output:
-        temp(tmp_path + "03_Missing/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/03_Missing/VCF_File_{region}.vcf.gz")
     params:
         tmp_path = tmp_path,
         missing_rate = missing_rate
@@ -124,7 +139,7 @@ rule N04_QUAL_filtration:
     input:
         rules.N03_Filter_missing_rate.output
     output:
-        temp(tmp_path + "04_QUAL_filt/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/04_QUAL_filt/VCF_File_{region}.vcf.gz")
     conda:
         working_directory + "Configuration_files/envs/Environment.yaml"
     shell:
@@ -138,7 +153,7 @@ rule N05_DP_filtration:
     input:
         rules.N04_QUAL_filtration.output
     output:
-        temp(tmp_path + "05_DP_filt/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/05_DP_filt/VCF_File_{region}.vcf.gz")
     params:
         tmp_path = tmp_path
     conda:
@@ -152,9 +167,9 @@ rule N05_DP_filtration:
 ######################## Filtration on Phred proba of strand bias (SP)  ###############################
 rule N06_SP_filtration_prep:
     input:
-        tmp_path + "10_Stats/6_DP/phred_qual_{region}.txt"
+        tmp_path + "{population}/10_Stats/6_DP/phred_qual_{region}.txt"
     output:
-        temp(tmp_path + "DP_List_SP_Filt/List_SP_{region}.tsv")
+        temp(tmp_path + "{population}/DP_List_SP_Filt/List_SP_{region}.tsv")
     params:
         cutoff = cutoff,
         working_directory = working_directory
@@ -171,7 +186,7 @@ rule N06_SP_filtration:
         vcf_file = rules.N05_DP_filtration.output,
         stats = rules.N06_SP_filtration_prep.output
     output:
-        temp(tmp_path + "06_SP_filt/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/06_SP_filt/VCF_File_{region}.vcf.gz")
     params:
         tmp_path = tmp_path
     conda:
@@ -187,7 +202,7 @@ rule N07_maf_thin_filtration:
     input:
         rules.N06_SP_filtration.output
     output:
-        temp(tmp_path + "07_Full_vcf/VCF_File_{region}.vcf.gz")
+        temp(tmp_path + "{population}/07_Full_vcf/VCF_File_{region}.vcf.gz")
     params:
         tmp_path = tmp_path
     conda:
@@ -203,7 +218,8 @@ rule N08_Hobs_filtration:
     input:
         rules.N07_maf_thin_filtration.output
     output:
-        temp(tmp_path + "08_Hobs/VCF_File_{region}.vcf.gz")
+        vcf = temp(tmp_path + "{population}/08_Hobs/VCF_File_{region}.vcf.gz"),
+        tsv = temp(tmp_path + "{population}/08_Hobs/Filter_vcf_Hobs_{region}.tsv")
     params:
         tmp_path = tmp_path,
         working_directory = working_directory,
@@ -212,18 +228,17 @@ rule N08_Hobs_filtration:
         working_directory + "Configuration_files/envs/Environment.yaml"
     shell:
         """
-            Rscript {params.working_directory:q}Scripts_snk/Filter_Hobs.r --input {input:q} --output {output:q} --Hobs {params.Hobs:q} --tmp {params.tmp_path:q}
+            Rscript {params.working_directory:q}Scripts_snk/Filter_Hobs.r --input {input:q} --output {output.vcf:q} --Hobs {params.Hobs:q} --tmp {params.tmp_path:q}
         """
-
 
 ######################## SNP Count  ###############################
 def make_rule_count_SNPs(step, raw_vcf_file, tmp_path, output_path):
     rule:
-        name: f"N08.{step.split('_')[0]}_Count_SNPs_on_{this_step(step)}_data"
+        name: f"N09.{step.split('_')[0]}_Count_SNPs_on_{this_step(step)}_data"
         input:
-            find_step_input(step, raw_vcf_file, tmp_path, output_path) + "VCF_File_{region}.vcf.gz"
+            find_step_input(step, "{population}", raw_vcf_file, tmp_path) + "VCF_File_{region}.vcf.gz"
         output:
-            temp(tmp_path + f"10_Stats/{step}/Position_count_{{region}}.csv")
+            temp(tmp_path + "{population}/10_Stats/" + step + "/Position_count_{region}.csv")
         shell:
             """
                 NSNPs=$(echo "$(zcat {input:q} | grep -v '#' | wc -l) + 1" | bc)
@@ -231,11 +246,11 @@ def make_rule_count_SNPs(step, raw_vcf_file, tmp_path, output_path):
             """
 
     rule:
-        name: f"N09.{step.split('_')[0]}_Concat_SNP_count_on_{this_step(step)}_data"
+        name: f"N10.{step.split('_')[0]}_Concat_SNP_count_on_{this_step(step)}_data"
         input:
-            expand(tmp_path + f"10_Stats/{step}/Position_count_{{region}}.csv", region=REGIONS.region)
+            expand(tmp_path + "{population}/10_Stats/" + step + "/Position_count_{region}.csv", region=REGIONS.region, allow_missing = True)
         output:
-            output_path + f"10_Stats/{step}/Position_count.csv"
+            output_path + "{population}/10_Stats/" + step + "/Position_count.csv"
         shell:
             """
                 cat {input:q} >> {output:q}
@@ -244,14 +259,14 @@ def make_rule_count_SNPs(step, raw_vcf_file, tmp_path, output_path):
 ######################## Concat vcf files  ###############################
 def concat_vcf(step, raw_vcf_file, tmp_path, output_path):
     rule:
-        name: f"N10.{step.split('_')[0]}_Concat_VCF_file_after_{this_step(step)}"
+        name: f"N11.{step.split('_')[0]}_Concat_VCF_file_after_{this_step(step)}"
         input:
-            expand(find_step_input(step, raw_vcf_file, tmp_path, output_path) + "VCF_File_{region}.vcf.gz", region=REGIONS.region)
+            expand(find_step_input(step, "{population}", raw_vcf_file, tmp_path) + "VCF_File_{region}.vcf.gz", region=REGIONS.region, allow_missing=True)
         output:
-            temp_out = temp(tmp_path + f"{step}/VCF_File.vcf"),
-            real = output_path + f"0{step}/VCF_File.vcf.gz"
+            temp_out = temp(tmp_path + "{population}/" + step + "/VCF_File.vcf"),
+            real = output_path + "{population}/0" + step + "/VCF_File.vcf.gz"
         params:
-            out_dir = tmp_path + f"{step}/"
+            out_dir = tmp_path + "{population}/" + step + "/"
         shell:
             """
                 mkdir -p {params.out_dir:q}
@@ -259,24 +274,24 @@ def concat_vcf(step, raw_vcf_file, tmp_path, output_path):
                 for file in {input:q}; do
                     zcat "$file" | grep -v "#" >> {output.temp_out:q}
                 done
-                gzip -c {output.temp_out:q} > {output:q}
+                gzip -c {output.temp_out:q} > {output.real:q}
             """
 
 ######################## Do Stats  ###############################
 def stats_vcf(step, raw_vcf_file, tmp_path, output_path):
     rule:
-        name: f"N11.{step.split('_')[0]}_Stats_on_{this_step(step)}_data"
+        name: f"N12.{step.split('_')[0]}_Stats_on_{this_step(step)}_data"
         input:
-            find_step_input(step, raw_vcf_file, tmp_path, output_path) + "VCF_File_{region}.vcf.gz"
+            find_step_input(step, "{population}", raw_vcf_file, tmp_path) + "VCF_File_{region}.vcf.gz"
         output:
-            site_qual = temp(tmp_path + f"10_Stats/{step}/site_qual_{{region}}.txt"),
-            phred = temp(tmp_path + f"10_Stats/{step}/phred_qual_{{region}}.txt"),
-            allel_freq = temp(tmp_path + f"10_Stats/{step}/allel_freq_{{region}}.txt"),
-            depth = temp(tmp_path + f"10_Stats/{step}/tot_depth_{{region}}.ldepth.mean"),
-            missing = temp(tmp_path + f"10_Stats/{step}/{{region}}.lmiss")
+            site_qual = temp(tmp_path + "{population}/10_Stats/" + step + "/site_qual_{region}.txt"),
+            phred = temp(tmp_path + "{population}/10_Stats/" + step + "/phred_qual_{region}.txt"),
+            allel_freq = temp(tmp_path + "{population}/10_Stats/" + step + "/allel_freq_{region}.txt"),
+            depth = temp(tmp_path + "{population}/10_Stats/" + step + "/tot_depth_{region}.ldepth.mean"),
+            missing = temp(tmp_path + "{population}/10_Stats/" + step + "/{region}.lmiss")
         params:
-            OUTDIR_Stats = tmp_path + f"10_Stats/{step}/tot_depth_{{region}}",
-            prefix_missing = tmp_path + f"10_Stats/{step}/{{region}}",
+            OUTDIR_Stats = tmp_path + "{population}/10_Stats/" + step + "/tot_depth_{region}",
+            prefix_missing = tmp_path + "{population}/10_Stats/" + step + "/{region}",
             tmp_path = tmp_path
         conda:
             working_directory + "Configuration_files/envs/Environment.yaml"
@@ -300,21 +315,23 @@ def stats_vcf(step, raw_vcf_file, tmp_path, output_path):
             """
 
     rule:
-        name: f"N12.{step.split('_')[0]}_Concat_stats_on_{this_step(step)}"
+        name: f"N13.{step.split('_')[0]}_Concat_stats_on_{this_step(step)}"
         input:
-            site_qual = expand(tmp_path + f"10_Stats/{step}/site_qual_{{region}}.txt", region=REGIONS.region),
-            phred = expand(tmp_path + f"10_Stats/{step}/phred_qual_{{region}}.txt", region=REGIONS.region),
-            allel_freq = expand(tmp_path + f"10_Stats/{step}/allel_freq_{{region}}.txt", region=REGIONS.region),
-            depth = expand(tmp_path + f"10_Stats/{step}/tot_depth_{{region}}.ldepth.mean", region=REGIONS.region),
-            missing = expand(tmp_path + f"10_Stats/{step}/{{region}}.lmiss", region=REGIONS.region)
+            site_qual = expand(tmp_path + "{population}/10_Stats/" + step + "/site_qual_{region}.txt", region=REGIONS.region, allow_missing = True),
+            phred = expand(tmp_path + "{population}/10_Stats/" + step + "/phred_qual_{region}.txt", region=REGIONS.region, allow_missing = True),
+            allel_freq = expand(tmp_path + "{population}/10_Stats/" + step + "/allel_freq_{region}.txt", region=REGIONS.region, allow_missing = True),
+            depth = expand(tmp_path + "{population}/10_Stats/" + step + "/tot_depth_{region}.ldepth.mean", region=REGIONS.region, allow_missing = True),
+            missing = expand(tmp_path + "{population}/10_Stats/" + step + "/{region}.lmiss", region=REGIONS.region, allow_missing = True)
         output:
-            site_qual = output_path + f"10_Stats/{step}/vcfstats.QUAL.txt", 
-            phred = output_path + f"10_Stats/{step}/vcfstats.SP.txt", 
-            allel_freq = output_path + f"10_Stats/{step}/vcfstats.AF.txt",
-            depth = output_path + f"10_Stats/{step}/vcfstats.DP.txt",
-            missing = output_path + f"10_Stats/{step}/vcfstats.lmiss"
+            site_qual = output_path + "{population}/10_Stats/" + step + "/vcfstats.QUAL.txt", 
+            phred = output_path + "{population}/10_Stats/" + step + "/vcfstats.SP.txt", 
+            allel_freq = output_path + "{population}/10_Stats/" + step + "/vcfstats.AF.txt",
+            depth = output_path + "{population}/10_Stats/" + step + "/vcfstats.DP.txt",
+            missing = output_path + "{population}/10_Stats/" + step + "/vcfstats.lmiss"
+        resources:
+            mem_mb = lambda wildcards, attempt: 8000 * double_mem(attempt)
         params:
-            indir = tmp_path + f"10_Stats/{step}/" 
+            indir = tmp_path + "{population}/10_Stats/" + step + "/" 
         shell:
             """
                 cat {params.indir:q}site_qual_*.txt > {output.site_qual:q}
@@ -326,27 +343,27 @@ def stats_vcf(step, raw_vcf_file, tmp_path, output_path):
     
     if step != "Raw":
         rule:
-            name: f"N13.{step.split('_')[0]}_Plot_graph_on_{this_step(step)}"
-        input:
-            site_qual = output_path + f"10_Stats/{step}/vcfstats.QUAL.txt", 
-            phred = output_path + f"10_Stats/{step}/vcfstats.SP.txt", 
-            allel_freq = output_path + f"10_Stats/{step}/vcfstats.AF.txt",
-            depth = output_path + f"10_Stats/{step}/vcfstats.DP.txt",
-            missing = output_path + f"10_Stats/{step}/vcfstats.lmiss"
-        output:
-            output_path + f"10_Stats/{step}/Quality_distribution.png"
-        resources:
-            mem_mb = get_mem_mb_plot_21
-        conda:
-            working_directory + "Configuration_files/envs/Environment.yaml"
-        params:
-            input_path = output_path + f"10_Stats/{step}/",
-            out_name = output_path + f"10_Stats/{step}/Quality_distribution",
-            working_directory = working_directory
-        shell:
-            """
-                Rscript {params.working_directory:q}Scripts_snk/Graph_quality.r --input {params.input_path:q} --output {params.out_name:q}
-            """
+            name: f"N14.{step.split('_')[0]}_Plot_graph_on_{this_step(step)}"
+            input:
+                site_qual = output_path + "{population}/10_Stats/" + step + "/vcfstats.QUAL.txt", 
+                phred = output_path + "{population}/10_Stats/" + step + "/vcfstats.SP.txt", 
+                allel_freq = output_path + "{population}/10_Stats/" + step + "/vcfstats.AF.txt",
+                depth = output_path + "{population}/10_Stats/" + step + "/vcfstats.DP.txt",
+                missing = output_path + "{population}/10_Stats/" + step + "/vcfstats.lmiss"
+            output:
+                output_path + "{population}/10_Stats/" + step + "/Quality_distribution.png"
+            resources:
+                mem_mb = get_mem_mb_plot_21
+            conda:
+                working_directory + "Configuration_files/envs/Environment.yaml"
+            params:
+                input_path = output_path + "{population}/10_Stats/" + step + "/",
+                out_name = output_path + "{population}/10_Stats/" + step + "/Quality_distribution",
+                working_directory = working_directory
+            shell:
+                """
+                    Rscript {params.working_directory:q}Scripts_snk/Graph_quality.r --input {params.input_path:q} --output {params.out_name:q}
+                """
 
 ######################## Stats (nb_positins, quality, depth, concatenation) for each step  ###############################
 for step in STEPS:
