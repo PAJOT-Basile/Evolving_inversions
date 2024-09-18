@@ -6,7 +6,7 @@ import numpy as np
 ########################  Functions   ###############################
 
 
-def find_step_input(step, raw_vcf_file, tmp_path, output_path):
+def find_step_input(step, pop, raw_vcf_file, tmp_path):
     """
     This function is used to give different inputs for counting snps on the successfully filtered vcfs.
 
@@ -30,19 +30,21 @@ def find_step_input(step, raw_vcf_file, tmp_path, output_path):
     if step == "1_Raw":
         return (raw_vcf_file)
     elif step == "2_Mac":
-        return (tmp_path + "01_MAC/")
+        return (tmp_path + pop + "/01_MAC/")
     elif step == "3_Biallelic":
-        return (tmp_path + "02_Biall/")
+        return (tmp_path + pop + "/02_Biall/")
     elif step == "4_Missing":
-        return (tmp_path + "03_Missing/")
+        return (tmp_path + pop + "/03_Missing/")
     elif step == "5_QUAL":
-        return (tmp_path + "04_QUAL_filt/")
+        return (tmp_path + pop + "/04_QUAL_filt/")
     elif step == "6_DP":
-        return (tmp_path + "05_DP_filt/")
+        return (tmp_path + pop + "/05_DP_filt/")
     elif step == "7_SP":
-        return (tmp_path + "06_SP_filt/")
+        return (tmp_path + pop + "/06_SP_filt/")
     elif step == "8_Maf":
-        return (tmp_path + "07_Full_vcf/")
+        return (tmp_path + pop + "/07_Full_vcf/")
+    elif step == "9_Hobs":
+        return (tmp_path + pop + "/08_Hobs/")
 
 
 def this_step(step):
