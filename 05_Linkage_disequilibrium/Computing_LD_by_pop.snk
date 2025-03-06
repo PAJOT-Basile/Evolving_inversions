@@ -1,0 +1,125 @@
+# ------------------------------------------------------------------
+#                   Basile Pajot, 2024
+#                   baspajot@gmail.com
+#     Script to process short-read data from selected samples
+# ------------------------------------------------------------------
+######################## Import custom functions ###############################
+from Scripts_snk.snakemake_functions import *
+
+######################## Import values from the configuration file  ###############################
+# Inputs
+raw_data_path = config["raw_data_path"]
+pop_map_path = config["pop_maps"]
+working_directory = config["Working_directory"]
+
+# Conda environment
+conda_environment = working_directory + "Configuration_files/envs/"
+
+# Temporary paths
+tmp_path = config["tmp_path"]
+
+# Output path
+output_path = config["output_path"]
+
+# Check if the input file exists
+if not os.path.isdir(pop_map_path):
+    sys.exit(
+        """
+        No valid Pop_map directory is given. Please create a Pop_map directory containing one text file per population you want to
+        add to the analysis. The text file should contain the names of the samples you want to use, without the file extensions.
+        Several populations may be given in this Pop_map directory.
+        """
+    )
+elif not os.listdir(pop_map_path):
+    sys.exit(
+        """
+        No valid Pop_map directory is given. Please create a Pop_map directory containing one text file per population you want to
+        add to the analysis. The text file should contain the names of the samples you want to use, without the file extensions.
+        Several populations may be given in this Pop_map directory.
+        """
+    )
+
+###################################### Global variables  ######################################
+######################## Get the names of the popmaps  ###############################
+POP_MAP = glob_wildcards(pop_map_path + "{populations}.txt")
+
+######################## Get the names of all the chromosomes  ###############################
+# TODO: find the best way to get the chromosome names
+CHROMOSOMES = get_chromosome_name(
+    working_directory + "Chromosomes/List_chromosomes.txt"
+)
+
+
+######################## Double memory  ###############################
+def double_mem(attempt):
+    return 2 ** (attempt - 1)
+
+
+###################################### Rules  ######################################
+######################## rule all  ###############################
+rule all:
+    input:
+        expand(
+            output_path + "{population}/LD_values/{chromosome}.geno.ld",
+            population=POP_MAP.populations,
+            chromosome=CHROMOSOMES,
+        ),
+        expand(
+            output_path + "{population}/LD_heatmaps/{chromosome}.png",
+            population=POP_MAP.populations,
+            chromosome=CHROMOSOMES,
+        ),
+
+
+######################## Sort the vcf file  ###############################
+rule N01_Sort:
+    input:
+        raw_data_path,
+    output:
+        temp(tmp_path + "VCF_Sorted/VCF_File.vcf.gz"),
+    params:
+        temporary_dir=tmp_path,
+    conda:
+        conda_environment + "N01_Sort.yaml"
+    shell:
+        """
+            bcftools sort -T {params.temporary_dir:q} {input:q} -Oz > {output:q}
+        """
+
+
+######################## Filter pop and chromosome  ###############################
+rule N02_LD:
+    input:
+        rules.N01_Sort.output,
+    output:
+        output_path + "{population}/LD_values/{chromosome}.geno.ld",
+    params:
+        path_pop=working_directory + "Pop_map/{population}.txt",
+        thin=config["Thin"],
+        maf=config["MAF"],
+        prefix_output=output_path + "{population}/LD_values/{chromosome}",
+    conda:
+        conda_environment + "N02_LD.yaml"
+    shell:
+        """
+            vcftools --gzvcf {input:q} --keep {params.path_pop:q} --chr {wildcards.chromosome:q} --thin {params.thin:q} --maf {params.maf:q} --geno-r2 --out {params.prefix_output:q}
+        """
+
+
+######################## Plot the LD  ###############################
+rule N03_Plot:
+    input:
+        rules.N02_LD.output,
+    output:
+        output_path + "{population}/LD_heatmaps/{chromosome}.png",
+    params:
+        working_directory=working_directory,
+        bin_size=config["Bin_size"],
+    conda:
+        conda_environment + "N03_Plot.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: 10000 * double_mem(attempt),
+    shell:
+        """
+            Rscript {params.working_directory:q}Scripts_snk/Plot_LD_heatmaps.r -i {input:q} -o {output:q} -b {params.bin_size:q}
+        """
