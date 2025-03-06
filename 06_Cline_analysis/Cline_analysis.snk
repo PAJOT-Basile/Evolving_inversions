@@ -3,9 +3,6 @@
 #                   baspajot@gmail.com
 #     Script to process short-read data from selected samples
 # ------------------------------------------------------------------
-######################## Import custom functions ###############################
-from Scripts_snk.snakemake_functions import *
-
 ######################## Import values from the configuration file  ###############################
 # Inputs
 raw_data_path = config["raw_data_path"]
