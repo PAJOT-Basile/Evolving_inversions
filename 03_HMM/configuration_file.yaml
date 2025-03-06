@@ -1,0 +1,83 @@
+--------------------------------------------------------
+-----------------------  Variables  --------------------
+--------------------------------------------------------
+
+name: Variables
+########################  Paths to use  ###############################
+# Inputs:
+# VCF file
+vcf_file: "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/07_SP/VCF_File.vcf.gz"
+# Metadata file
+metadata: "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx"
+vcf_small: "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
+# Folder where all the temporary files will be stored
+tmp_path: "/shared/scratch/pacobar/bpajot/tmp/HMM/"
+
+# Where to save the final output data
+output_path: "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/03_HMM/"
+
+# Reference individuals
+ref_indiv_path: "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/"
+
+# Maf value
+MAF: 0.3
+
+---------------------------------------------------------
+-----------------------  Profile  -----------------------
+---------------------------------------------------------
+name: Profile
+########################  Cluster identification  ###############################
+cluster:
+  mkdir -p /shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/03_HMM/logs/{rule}/error_files/ &&
+  mkdir -p /shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/03_HMM/logs/{rule}/logs/ &&
+  sbatch
+    --account=pacobar
+    --partition={resources.partition}
+    --cpus-per-task={threads}
+    --mem={resources.mem_mb}
+    --job-name={rule}-{wildcards}
+    --output=/shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/03_HMM/logs/{rule}/logs/{rule}-{wildcards}-%j.out
+    --error=/shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/03_HMM/logs/{rule}/error_files/{rule}-{wildcards}-%j.err
+    --parsable
+
+########################  Resources to use  ###############################
+default-resources:
+  - partition=fast
+  - mem_mb=8000
+  - tmpdir="/shared/scratch/pacobar/bpajot/tmp/HMM/"
+
+
+########################  Parameters to use for the snakemake  ###############################
+restart-times: 3
+max-jobs-per-second: 10
+max-status-checks-per-second: 1
+local-cores: 1
+latency-wait: 30
+jobs: 40
+keep-going: True
+rerun-incomplete: True
+printshellcmds: True
+use-conda: True
+
+
+
+---------------------------------------------------------
+---------------------  Environments  --------------------
+---------------------------------------------------------
+name: Environments
+########################  Dependencies  ###############################
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - vcftools = 0.1.16
+  # R and R packages
+  - r = 4.3.1
+  - r-pacman
+  - r-HiddenMarkov
+  - r-foreach
+  - r-doParallel
+  - r-argparse
+  # Python and Python packages
+
