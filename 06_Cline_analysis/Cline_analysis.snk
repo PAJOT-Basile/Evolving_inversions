@@ -1,0 +1,141 @@
+# ------------------------------------------------------------------
+#                   Basile Pajot, 2024
+#                   baspajot@gmail.com
+#     Script to process short-read data from selected samples
+# ------------------------------------------------------------------
+######################## Import custom functions ###############################
+from Scripts_snk.snakemake_functions import *
+
+######################## Import values from the configuration file  ###############################
+# Inputs
+raw_data_path = config["raw_data_path"]
+metadata = config["metadata"]
+working_directory = config["Working_directory"]
+
+# Conda environment
+conda_environment = working_directory + "Configuration_files/envs/"
+
+# Temporary paths
+tmp_path = config["tmp_path"]
+
+# Output path
+output_path = config["output_path"]
+
+
+######################## Variables  ###############################
+max_value = 983
+range_values = [str(i) for i in range(0, max_value + 1)]
+Values = []
+for i in range_values:
+    if len(str(i)) < len(str(max_value)):
+        j = ["0"] * (len(str(max_value)) - len(str(i)))
+        j.append(str(i))
+        Values.append("".join(j))
+    else:
+        Values.append(str(i))
+batch_size = config["batch_size"]
+
+print(Values)
+
+
+######################## Double memory  ###############################
+def double_mem(attempt):
+    return 2 ** (attempt - 1)
+
+
+###################################### Rules  ######################################
+######################## rule all  ###############################
+rule all:
+    input:
+        output_path + "Priors/High_delta_freqs.tsv",
+        output_path + "Priors/Priors_high_delta_freqs.tsv",
+        output_path + "Cline_parameters.tsv",
+
+
+###################### Get the priors  ###############################
+rule N01_Get_priors:
+    input:
+        metadata=metadata,
+        vcf_file=raw_data_path,
+    output:
+        high_delta_freqs=output_path + "Priors/High_delta_freqs.tsv",
+        priors=output_path + "Priors/Priors_high_delta_freqs.tsv",
+    params:
+        working_directory=working_directory,
+        output_directory=output_path + "Priors/",
+    resources:
+        mem_mb=lambda wildcards, attempt: 9000 * double_mem(attempt),
+    conda:
+        conda_environment + "N01_Get_priors.yaml"
+    shell:
+        """
+            Rscript {params.working_directory:q}Scripts_snk/Get_priors.r -m {input.metadata:q} -g {input.vcf_file:q} -o {params.output_directory:q}
+        """
+
+
+###################### Fragment the priors  ###############################
+rule N02_Fragment_inputs:
+    input:
+        rules.N01_Get_priors.output.priors,
+    output:
+        temp(expand(tmp_path + "Priors_cut/Priors_{num_split}", num_split=Values)),
+    params:
+        batch_size=batch_size,
+        output_dir=tmp_path + "Priors_cut/",
+    shell:
+        """
+            split -l {params.batch_size} -d -a3 {input} {params.output_dir}Priors_
+        """
+
+
+rule N02_Fragment_inputs1:
+    input:
+        priors=rules.N01_Get_priors.output.priors,
+        cut_prior=tmp_path + "Priors_cut/Priors_{num_split}",
+    output:
+        temp(tmp_path + "Priors_cut/Priors_{num_split}.tsv"),
+    params:
+        cutting_value=lambda wildcards: int(wildcards.num_split) * batch_size,
+        output_dir=tmp_path + "Priors_cut/",
+    shell:
+        """
+            if [[ {input.cut_prior:q} != *"000"* ]]; then
+                head -n1 {input.priors} >{output} && cat {input.cut_prior} >>{output}
+            else
+                cat {input.cut_prior} > {output}
+            fi
+        """
+
+
+###################### Run the cline analyses  ###############################
+rule N03_Cline_analysis:
+    input:
+        priors=rules.N02_Fragment_inputs1.output,
+        high_delta_freqs=rules.N01_Get_priors.output.high_delta_freqs,
+        metadata=metadata,
+        vcf_file=raw_data_path,
+    output:
+        temp(tmp_path + "Params/Params_{num_split}.tsv"),
+    params:
+        working_directory=working_directory,
+    resources:
+        mem_mb=lambda wildcards, attempt: 40000 * double_mem(attempt),
+    shell:
+        """
+            Rscript {params.working_directory:q}Scripts_snk/Run_cline_analysis.r -v {input.vcf_file:q} -p {input.priors:q} -d {input.high_delta_freqs:q} -o {output:q} -m {input.metadata:q}
+        """
+
+
+###################### Concatenate the files  ###############################
+rule N04_Concat_csvs:
+    input:
+        expand(rules.N03_Cline_analysis.output, num_split=Values),
+    output:
+        output_path + "Cline_parameters.tsv",
+    shell:
+        """
+            grep "Population" {input[0]:q} > {output:q}
+            for file in {input:q}; do
+                grep -v "Population" "$file" >> {output:q}
+            done
+        """
