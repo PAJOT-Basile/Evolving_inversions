@@ -1,0 +1,135 @@
+# Libraries
+import os as os
+
+######################## Import values from the configuration file  ###############################
+vcf_file = config["vcf_file"]
+metadata_file = config["metadata"]
+vcf_small_file = config["vcf_small"]
+ref_indiv_path = config["ref_indiv_path"]
+
+
+working_directory = config["Working_directory"]
+tmp_path = config["tmp_path"]
+
+output_path = config["output_path"]
+
+
+######################## General variables  ###############################
+COUNTRIES = ["France", "Sweden"]
+EXPOSITION = ["exposed", "sheltered"]
+
+
+######################## Double memory  ###############################
+def double_mem(attempt):
+    return 2 ** (attempt - 1)
+
+
+######################## RULES  ###############################
+######################## rule all  ###############################
+# Allows to check for input and outputs
+rule all:
+    input:
+        # Rule N01_Name_indivs
+        expand(
+            ref_indiv_path + "{country}_{exposition}.txt",
+            country=COUNTRIES,
+            exposition=EXPOSITION,
+        ),
+        # Rule N03
+        expand(
+            output_path + "Data/{country}.weir.fst",
+            country=COUNTRIES,
+        ),
+        # Rule N05_mv_HMM
+        expand(
+            output_path + "Results_HMM/{country}.weir_2state_HMMstates.txt",
+            country=COUNTRIES,
+        ),
+
+
+######################## rule to get the names of the individuals in the French and Swedish populations  ###############################
+rule N01_Name_indivs:
+    input:
+        metadata=metadata_file,
+        vcf_file=vcf_small_file,
+    output:
+        expand(
+            ref_indiv_path + "{country}_{exposition}.txt",
+            country=COUNTRIES,
+            exposition=EXPOSITION,
+        ),
+    message:
+        "Filtering extreme individuals"
+    resources:
+        mem_mb=lambda wildcards, attempt: 64000 * double_mem(attempt),
+        partition="long",
+    params:
+        working_directory=working_directory,
+        outdir=ref_indiv_path,
+    conda:
+        working_directory + "Configuration_files/envs/N01_Name_indivs.yaml"
+    shell:
+        """
+            Rscript {params.working_directory:q}Scripts_snk/Filter_indivs.r --vcf {input.vcf_file:q} --metadata {input.metadata:q} --outdir {params.outdir:q}
+        """
+
+
+######################## vcftools to calculate the allelic frequencies in each population  ###############################
+rule N02_VCFTools:
+    input:
+        pop_file_exposed=ref_indiv_path + "{country}_exposed.txt",
+        pop_file_sheltered=ref_indiv_path + "{country}_sheltered.txt",
+        vcf_file=vcf_file,
+    output:
+        output_path + "Data/{country}.weir.fst",
+    params:
+        out_prefix=output_path + "Data/{country}",
+        maf=config["MAF"],
+    message:
+        "Calculating Fst for {wildcards.country}"
+    conda:
+        working_directory + "Configuration_files/envs/N02_VCFTools.yaml"
+    shell:
+        """
+            vcftools --gzvcf {input.vcf_file:q} --maf {params.maf:q} --weir-fst-pop {input.pop_file_exposed:q} --weir-fst-pop {input.pop_file_sheltered:q} --out {params.out_prefix:q} 
+        """
+
+
+######################## Run HMM  ###############################
+rule N03_HMM:
+    input:
+        rules.N02_VCFTools.output,
+    output:
+        output_path + "Data/{country}.weir_2state_HMMstates.txt",
+    message:
+        "HMM on {wildcards.country}"
+    threads: 15
+    resources:
+        mem_mb=50000,
+        partition="long",
+    params:
+        working_directory=working_directory,
+    conda:
+        working_directory + "Configuration_files/envs/N03_HMM.yaml"
+    shell:
+        """
+            Rscript {params.working_directory:q}Scripts_snk/HMM_log_delta_freqs_modif_2norms.R {input:q} {threads}
+        """
+
+
+######################## Move output of HMM  ###############################
+rule N03_mv_HMM:
+    input:
+        rules.N03_HMM.output,
+    output:
+        output_path + "Results_HMM/{country}.weir_2state_HMMstates.txt",
+    message:
+        "Moving HMM output for {wildcards.country}"
+    params:
+        in_file=output_path + "Data/{country}.weir_",
+        out_dir=output_path + "Results_HMM/",
+    shell:
+        """
+            mkdir -p {params.out_dir:q}
+            mv {params.in_file:q}* {params.out_dir:q}
+        """
