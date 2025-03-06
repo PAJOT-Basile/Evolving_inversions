@@ -1,4 +1,4 @@
-# 02.1_Filter_VCF_Files
+# 02_Filter_VCF_File
 
 This folder contains all the standalone scripts and parameters to run the snakemake on several samples to filter a vcf file on several parameters and do some stats on the filtration steps.
 
