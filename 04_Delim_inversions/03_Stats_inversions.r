@@ -10,6 +10,8 @@ my_theme <- theme_bw() +
 ################## Useful functions  ##################
 source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
 
+# Function to get the exposition of a group of individuals using the DAPC cluster outputs
+# This function requires a Group (DAPC clustering) and a Sample_Name (name of the samples) column to work
 find_exposition_of_individuals <- function(df){
   Exposed <- (df %>% 
                 filter(Group == 1))$Sample_Name %>% 
@@ -28,6 +30,7 @@ find_exposition_of_individuals <- function(df){
   ))
 }
 
+# Function to compute the heterozygozity of a group of indiviudals
 calculate_heterozygosity <- function(genetic_data, exposition){
   # Add the sample names to the genetic table
   df <- genetic_data@tab %>% 
@@ -51,135 +54,6 @@ calculate_heterozygosity <- function(genetic_data, exposition){
   names(Hobs) <- names(exposition)
   
   return(Hobs)
-}
-
-compute_polymorphism <- function(genetic_data, exposition){
-  # Add the sample names to the genetic table and filter the individuals we want
-  df <- genetic_data@tab %>% 
-    as_tibble %>% 
-    mutate(Sample_Name = rownames(genetic_data@tab))
-  
-  # Initialise the loop
-  Nb_poly_markers <- vector(mode = "list", length = length(exposition))
-  for (level in names(summary_exposition_individuals)){
-    # Get the position of the karyotype in the list
-    nb_in_list <- which(names(exposition) == level)
-    
-    # Get only the individuals with one karyotype
-    df_level <- df %>% 
-      filter(Sample_Name %in% exposition[[level]])
-    
-    # Get the number of polymporhic loci
-    nb_poly_loci <- df_level %>% 
-      select(ends_with("0")) %>% 
-      pivot_longer(cols = everything(), names_to = "Locus", values_to = "Genotype") %>%
-      group_by(Locus) %>%
-      summarize(distinct = n_distinct(Genotype)) %>% 
-      filter(distinct > 1) %>% 
-      nrow
-    
-    # Get the proportion of polymorphic loci
-    Nb_poly_markers[nb_in_list] <- nb_poly_loci
-  }
-  names(Nb_poly_markers) <- names(exposition)
-  return(Nb_poly_markers)
-}
-
-calculate_freq_genotype <- function(df){
-  # Missing data
-  Na_count <- df %>% 
-    is.na %>% 
-    colSums(na.rm = TRUE)
-  
-  # Sum of the p allele
-  Nb_p <- (2 * (df == 0) + (df == 1)) %>% 
-    colSums(na.rm = TRUE)
-  
-  # Compute p allele frequency
-  p_freq <- Nb_p / ((nrow(df) - Na_count) * 2)
-  
-  # Compute q freq
-  q_freq <- 1 - p_freq
-  
-  # Return the frequencies
-  return(list("p" = p_freq, "q" = q_freq))
-  
-}
-
-reorder_freqs <- function(freq_exp, freq_shelt){
-  df <- freq_exp$p %>% 
-    cbind(freq_shelt$p) %>% 
-    as.data.frame %>% 
-    rename(Expos = ".",
-           Shelt = V2) %>% 
-    mutate(Expos_freq = ifelse(Expos > Shelt, 1 - Expos, Expos),
-           Shelt_freq = ifelse(Expos > Shelt, 1 - Shelt, Shelt))
-  
-  
-  p_expos <- df$Expos_freq
-  names(p_expos) <- names(freq_exp$p)
-  
-  p_shelt <- df$Shelt_freq
-  names(p_shelt) <- names(freq_exp$p)
-  return(list(
-    "Exposed" = list("p" = p_expos, "q" = 1 - p_expos),
-    "Sheltered" = list("p" = p_shelt, "q" = 1 - p_shelt)
-  ))
-}
-
-compute_discriminant_snps <- function(genetic_data, exposition, diff_value = 1){
-  # Add the sample names to the genetic table and filter the individuals we want
-  df <- genetic_data@tab %>%
-    as_tibble %>%
-    select(ends_with("0")) %>%
-    mutate(Sample_Name = rownames(genetic_data@tab),
-           Karyotype = ifelse(Sample_Name %in% exposition$Exposed, "EE",
-                              ifelse(Sample_Name %in% exposition$Sheltered, "SS", "ES")))
-  
-  # Calculate allele frequencies in the exposed individuals
-  exposed_freqs <- df %>% 
-    filter(Karyotype == "EE") %>% 
-    select(-c(Sample_Name, Karyotype)) %>%
-    calculate_freq_genotype()
-  
-  # Compute allele frequencies in the sheltered individuals
-  sheltered_freqs <- df %>% 
-    filter(Karyotype == "SS") %>% 
-    select(-c(Sample_Name, Karyotype)) %>% 
-    calculate_freq_genotype()
-  
-  
-  # Reorder the allele frequencies so they can be comparable
-  corrected_freqs <- reorder_freqs(exposed_freqs, sheltered_freqs)
-  
-  # Get the number of distinctive SNPs
-  nb_discriminant_snps <- corrected_freqs$Exposed$p %>% 
-    cbind(corrected_freqs$Sheltered$p) %>% 
-    as.data.frame %>% 
-    rename(Expos = ".",
-           Shelt = V2) %>% 
-    rownames_to_column("Position") %>% 
-    filter(Shelt >= diff_value & Expos <= 1 - diff_value) %>% 
-    nrow
-  
-  return(nb_discriminant_snps)
-}
-
-compute_heterozygote_deficit <- function(df){
-  
-  # Compute observed heterozygosity
-  Hobs <- Compute_Hobs(df)
-  
-  # Compute expected heterozygosity
-  ## Allele frequencies
-  freqs <- calculate_freq_genotype(df)
-  
-  ## Expected heterozygosity
-  Hexp <- 2 * freqs$p * freqs$q
-  
-  # Compute deficit of heterozygotes
-  FIS <- (Hexp - Hobs) / Hexp
-  return(FIS)
 }
 
 ################## Import metadata  ##################
@@ -252,7 +126,7 @@ data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/S
 SV_stats <- data.frame()
 for (inversion in delimitation_inversions$Inversion %>% unique){
   cat("\n", inversion)
-  cat(inversion, "\t", progress_bar(0, 5))
+  cat(inversion, "\t", progress_bar(0, 3))
   chromosome <- (delimitation_inversions %>% 
                    filter(Inversion == inversion))$Chromosome %>% 
     unique
@@ -291,7 +165,7 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
   
   ### Subset the data for the positions in the table
   data_inv <- data[loc = name_positions_in_inversion]
-  cat(inversion, "\t", progress_bar(1, 5))
+  cat(inversion, "\t", progress_bar(1, 3))
   ### Make a list of the exposed individuals on this inversion
   summary_exposition_individuals <- delimitation_inversions %>% 
     filter(Inversion == inversion) %>% 
@@ -321,197 +195,8 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
   
   Hobs_Sweden <- Hobs_Sweden_distrib %>% 
     lapply(mean)
-  cat(inversion, "\t", progress_bar(2, 5))
-  # Create dataframe of heterozygosity
-  (Hobs_distrib %>% 
-    Transform_Hobs2df() %>% 
-    mutate(Exposition = Names,
-           Population = "Both") %>% 
-    rbind(Hobs_France_distrib %>% 
-            Transform_Hobs2df() %>% 
-            mutate(Exposition = Names,
-                   Population = "France"))  %>% 
-    rbind(Hobs_Sweden_distrib %>% 
-            Transform_Hobs2df() %>% 
-            mutate(Exposition = Names,
-                   Population = "Sweden")) %>% 
-    mutate(Population = Population %>% 
-             factor(levels = c("Sweden", "Both", "France")),
-           Genotype = case_when(
-             Exposition == "Exposed" ~ "EE",
-             Exposition == "Sheltered" ~ "SS",
-             TRUE ~ "ES"
-           ) %>% 
-             factor(levels = c("SS", "ES", "EE"))) %>% 
-    ggplot() +
-    geom_violin(aes(x = Genotype, y = Hobs, fill = Genotype), alpha = 0.6) +
-    scale_fill_manual(values = c("EE" = "dodgerblue", "ES" = "grey41", "SS" = "orange2")) +
-    facet_wrap(vars(Population)) +
-    my_theme) %>% 
-    ggsave(plot = ., filename = paste0("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats/", inversion, ".png"),
-           device = "png", units = "px", width = 1200, height = 800, scale = 3.5)
-  
-  ## Calculate proportion of polymorphic SNPs with two pops
-  # Poly_two_pops <- compute_polymorphism(data_inv, summary_exposition_individuals)
-  # Poly_Sweden <- compute_polymorphism(
-  #   data_inv[which(grepl("LOK", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LOK", x))]
-  #   })
-  # )
-  
-  # Poly_France <- compute_polymorphism(
-  #   data_inv[which(grepl("LAM", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LAM", x))]
-  #   })
-  # )
-  cat(inversion, "\t", progress_bar(3, 5))
-  
-  ## Find proportion of distinctive SNPs between exposed and Sheltered
-  # Distinctive_SNPs_France <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LAM", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LAM", x))]
-  #   })
-  # )
-  
-  # Distinctive_SNPs_Sweden <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LOK", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LOK", x))]
-  #   })
-  # )
-  
-  # Diagnostic_Snps_both <- compute_discriminant_snps(data_inv, summary_exposition_individuals)
-  
-  # Distinctive_SNPs_France095 <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LAM", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LAM", x))]
-  #   }), diff_value = 0.95
-  # )
-  
-  # Distinctive_SNPs_Sweden095 <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LOK", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LOK", x))]
-  #   }), diff_value = 0.95
-  # )
-  
-  # Diagnostic_Snps_both095 <- compute_discriminant_snps(data_inv, summary_exposition_individuals, diff_value = 0.95)
-  
-  # Distinctive_SNPs_France090 <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LAM", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LAM", x))]
-  #   }), diff_value = 0.90
-  # )
-  
-  # Distinctive_SNPs_Sweden090 <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LOK", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LOK", x))]
-  #   }), diff_value = 0.90
-  # )
-  
-  # Diagnostic_Snps_both090 <- compute_discriminant_snps(data_inv, summary_exposition_individuals, diff_value = 0.90)
-  
-  # Distinctive_SNPs_France080 <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LAM", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LAM", x))]
-  #   }), diff_value = 0.80
-  # )
-  
-  # Distinctive_SNPs_Sweden080 <- compute_discriminant_snps(
-  #   data_inv[which(grepl("LOK", indNames(data_inv)))],
-  #   lapply(summary_exposition_individuals, function(x){
-  #     x[which(grepl("LOK", x))]
-  #   }), diff_value = 0.80
-  # )
-  
-  # Diagnostic_Snps_both080 <- compute_discriminant_snps(data_inv, summary_exposition_individuals, diff_value = 0.80)
-  
-  # Heterozygote deficit 
-  ## France
-  # FIS_France <- delimitation_inversions %>% 
-  #   filter(Inversion == inversion) %>% 
-  #   left_join(metadata, by = "Sample_Name") %>% 
-  #   left_join(cline_params, by = "Inversion") %>% 
-  #   select(-contains("Sweden")) %>% 
-  #   filter(Population == "France",
-  #          LCmeanDist <= Centre_France + Width_France/2,
-  #          LCmeanDist >= Centre_France - Width_France/2) %>% 
-  #   mutate(Group = Group - 1) %>% 
-  #   ungroup %>% 
-  #   select(Group) %>% 
-  #   compute_heterozygote_deficit()
-  
-  # FIS_France_left <- delimitation_inversions %>% 
-  #   filter(Inversion == inversion) %>% 
-  #   left_join(metadata, by = "Sample_Name") %>% 
-  #   left_join(cline_params, by = "Inversion") %>% 
-  #   select(-contains("Sweden")) %>% 
-  #   filter(Population == "France",
-  #          LCmeanDist < Centre_France - Width_France/2) %>% 
-  #   mutate(Group = Group - 1) %>% 
-  #   ungroup %>% 
-  #   select(Group) %>% 
-  #   compute_heterozygote_deficit()
-  
-  # FIS_France_right <- delimitation_inversions %>% 
-  #   filter(Inversion == inversion) %>% 
-  #   left_join(metadata, by = "Sample_Name") %>% 
-  #   left_join(cline_params, by = "Inversion") %>% 
-  #   select(-contains("Sweden")) %>% 
-  #   filter(Population == "France",
-  #          LCmeanDist > Centre_France + Width_France/2) %>% 
-  #   mutate(Group = Group - 1) %>% 
-  #   ungroup %>% 
-  #   select(Group) %>% 
-  #   compute_heterozygote_deficit()
+  cat(inversion, "\t", progress_bar(2, 3))
 
-  ## Sweden
-  # FIS_Sweden <- delimitation_inversions %>% 
-  #   filter(Inversion == inversion) %>% 
-  #   left_join(metadata, by = "Sample_Name") %>% 
-  #   left_join(cline_params, by = "Inversion") %>% 
-  #   select(-contains("France")) %>% 
-  #   filter(Population == "Sweden",
-  #          LCmeanDist <= Centre_Sweden + Width_Sweden/2,
-  #          LCmeanDist >= Centre_Sweden - Width_Sweden/2) %>% 
-  #   mutate(Group = Group - 1) %>% 
-  #   ungroup %>% 
-  #   select(Group) %>% 
-  #   compute_heterozygote_deficit()
-  
-  # FIS_Sweden_left <- delimitation_inversions %>% 
-  #   filter(Inversion == inversion) %>% 
-  #   left_join(metadata, by = "Sample_Name") %>% 
-  #   left_join(cline_params, by = "Inversion") %>% 
-  #   select(-contains("France")) %>% 
-  #   filter(Population == "Sweden",
-  #          LCmeanDist < Centre_Sweden - Width_Sweden/2) %>% 
-  #   mutate(Group = Group - 1) %>% 
-  #   ungroup %>% 
-  #   select(Group) %>% 
-  #   compute_heterozygote_deficit()
-  
-  
-  # FIS_Sweden_right <- delimitation_inversions %>% 
-  #   filter(Inversion == inversion) %>% 
-  #   left_join(metadata, by = "Sample_Name") %>% 
-  #   left_join(cline_params, by = "Inversion") %>% 
-  #   select(-contains("France")) %>% 
-  #   filter(Population == "Sweden",
-  #          LCmeanDist > Centre_Sweden + Width_Sweden/2) %>% 
-  #   mutate(Group = Group - 1) %>% 
-  #   ungroup %>% 
-  #   select(Group) %>% 
-  #   compute_heterozygote_deficit()
-  
-    cat(inversion, "\t", progress_bar(4, 5))
   ## Calculate the mean LD
   LD_table <- read.table(paste0("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/05_LD_computations/France/LD_values/", chromosome, ".geno.ld"),
                          sep = "\t", header = TRUE) %>% 
@@ -526,7 +211,7 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
            POS2 %in% list_positions_in_inversion) %>% 
     summarize(Mean_LD = mean(LD, na.rm = TRUE))
   
-  cat(inversion, "\t", progress_bar(5, 5))
+  cat(inversion, "\t", progress_bar(3, 3))
   df_add <- data.frame(
     "Chromosome" = chromosome,
     "Inversion" = inversion,
@@ -534,12 +219,6 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
     "End" = End_inv,
     "Length" = Length_inv,
     "Nb_Snps" = (ncol(data_inv@tab) / 2),
-    # "FIS_Sweden" = FIS_Sweden %>% round(digits = 4),
-    # "FIS_Sweden_left" = FIS_Sweden_left %>% round(digits = 4),
-    # "FIS_Sweden_right" = FIS_Sweden_right %>% round(digits = 4),
-    # "FIS_France" = FIS_France %>% round(digits = 4),
-    # "FIS_France_left" = FIS_France_left %>% round(digits = 4),
-    # "FIS_France_right" = FIS_France_right %>% round(digits = 4),
     "Sweden_LD" = ((LD_table %>% filter(Population == "Sweden"))$Mean_LD) %>% round(digits = 4),
     "France_LD" = ((LD_table %>% filter(Population == "France"))$Mean_LD) %>% round(digits = 4),
     "Hobs_EE" = (Hobs$Exposed) %>% round(digits = 4),
@@ -550,39 +229,8 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
     "Hobs_Sweden_SS" = (Hobs_Sweden$Sheltered) %>% round(digits = 4),
     "Hobs_France_EE" = (Hobs_France$Exposed) %>% round(digits = 4),
     "Hobs_France_ES" = (Hobs_France$Transition) %>% round(digits = 4),
-    "Hobs_France_SS" = (Hobs_France$Sheltered) %>% round(digits = 4)#,
-    # "N_Poly_both_EE" = (Poly_two_pops$Exposed) %>% round(digits = 4),
-    # "N_Poly_both_ES" = (Poly_two_pops$Transition) %>% round(digits = 4),
-    # "N_Poly_both_SS" = (Poly_two_pops$Sheltered) %>% round(digits = 4),
-    # "N_Poly_France_EE" = (Poly_France$Exposed) %>% round(digits = 4),
-    # "N_Poly_France_ES" = (Poly_France$Transition) %>% round(digits = 4),
-    # "N_Poly_France_SS" = (Poly_France$Sheltered) %>% round(digits = 4),
-    # "N_Poly_Sweden_EE" = (Poly_Sweden$Exposed) %>% round(digits = 4),
-    # "N_Poly_Sweden_ES" = (Poly_Sweden$Transition) %>% round(digits = 4),
-    # "N_Poly_Sweden_SS" = (Poly_Sweden$Sheltered) %>% round(digits = 4),
-    # "N_Diagnostic_Snps_Fr_Sw" = (Diagnostic_Snps_both) %>% round(digits = 4),
-    # "N_Discriminant_Prop_France" = (Distinctive_SNPs_France) %>% round(digits = 4),
-    # "N_Discriminant_Prop_Sweden" = (Distinctive_SNPs_Sweden) %>% round(digits = 4),
-    # "N_Diagnostic_Snps_Fr_Sw0.95" = (Diagnostic_Snps_both095) %>% round(digits = 4),
-    # "N_Discriminant_Prop_France0.95" = (Distinctive_SNPs_France095) %>% round(digits = 4),
-    # "N_Discriminant_Prop_Sweden0.95" = (Distinctive_SNPs_Sweden095) %>% round(digits = 4),
-    # "N_Diagnostic_Snps_Fr_Sw0.90" = (Diagnostic_Snps_both090) %>% round(digits = 4),
-    # "N_Discriminant_Prop_France0.90" = (Distinctive_SNPs_France090) %>% round(digits = 4),
-    # "N_Discriminant_Prop_Sweden0.90" = (Distinctive_SNPs_Sweden090) %>% round(digits = 4),
-    # "N_Diagnostic_Snps_Fr_Sw0.80" = (Diagnostic_Snps_both080) %>% round(digits = 4),
-    # "N_Discriminant_Prop_France0.80" = (Distinctive_SNPs_France080) %>% round(digits = 4),
-    # "N_Discriminant_Prop_Sweden0.80" = (Distinctive_SNPs_Sweden080) %>% round(digits = 4)
-  ) #%>% 
-    # mutate(across(starts_with("N_"), ~ round(.x / Nb_Snps, digits = 4), .names = "p_{.col}")) %>% 
-    # rename_all(
-    #   .funs = list(
-    #     function(x){
-    #       ifelse(grepl("p_N_", make.names(names(.))),
-    #              gsub("p_N_", "p_", make.names(names(.))),
-    #              make.names(names(.)))
-    #     }
-    #   )
-    # )
+    "Hobs_France_SS" = (Hobs_France$Sheltered) %>% round(digits = 4))
+    
   if (!file.exists("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv")){
     df_add %>%
       write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv", append = TRUE, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
