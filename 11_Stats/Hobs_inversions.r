@@ -205,24 +205,6 @@ for (inversion in delim_invs$Inversion %>% unique){
   Heterozygosity <- calculate_heterozygosity(data_inv, summary_exposition_individuals, MARGIN = 2)
   print("    Heterozygotes")
   # Transform into a dataframe to be usable in the tidy format
-  # summary_df <- summary_df %>% 
-  #   add_table_to_df_in_iteration(
-  #     Heterozygosity %>%
-  #       bind_cols() %>%
-  #       dplyr::slice(1:(nrow(.)-1)) %>%
-  #       mutate(Position = data_inv@tab %>% colnames) %>%
-  #       transform_position_ade2tidy() %>%
-  #       unique %>% 
-  #       pivot_longer(cols = c(Exposed_indivs, Transition, Sheltered), names_to = "Exposition",
-  #                    values_to = "Hobs") %>% 
-  #       mutate(Genotype = case_when(
-  #                     Exposition == "Exposed_indivs" ~ "EE",
-  #                     Exposition == "Transition" ~ "ES",
-  #                     TRUE ~ "SS"
-  #                   ),
-  #                   Chromosome = chromosome,
-  #                   Inversion = inversion)
-  #   )
   summary_df <- summary_df %>%
     add_table_to_df_in_iteration(
       Heterozygosity %>%
