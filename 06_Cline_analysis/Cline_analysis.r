@@ -1,4 +1,4 @@
-# Import libraries
+############### Libraries ###############
 libraries <- c("tidyverse", "adegenet", "vcfR", "readxl", "StAMPP", "dartR")
 pacman::p_load(char = libraries, character.only = TRUE)
 rm(libraries)
@@ -7,6 +7,7 @@ rm(libraries)
 ################## Useful functions  ##################
 source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
 
+# Function to count the number of unique positions in a dataframe containing the "Position" column
 count_nb_unique_positions <- function(df){
   df %>% 
     pull(Position) %>% 
@@ -231,6 +232,7 @@ Summary_stats <- data.frame(
                       Private_clines_france_invs)
 )
 
+# Save the ouptut
 Summary_stats %>% 
   write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Summary_stats.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE) 
@@ -284,6 +286,7 @@ data_para <- data[loc = Para_cline_SNPs] %>%
 
 Fst_parallel <- stamppFst(data_para, nboots = 10000, percent = 95, nclusters = 3)
 
+# Save the outputs of the function in a file
 Fst_parallel$Fsts %>% 
   as.data.frame %>% 
   rownames_to_column("Ecotype_1") %>% 
@@ -308,6 +311,7 @@ data_antipara <- data[loc = Antipara_cline_SNPs] %>%
 
 Fst_antiparallel <- stamppFst(data_antipara, nboots = 10000, percent = 95, nclusters = 3)
 
+# Save the ouputs in a file
 Fst_antiparallel$Fsts %>% 
   as.data.frame %>% 
   rownames_to_column("Ecotype_1") %>% 
