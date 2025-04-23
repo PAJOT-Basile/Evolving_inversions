@@ -53,16 +53,16 @@ This folder contains the scripts to run the genome wide association study (GWAS)
 
 This folder contains the scripts to compute the heterozygosity of the inversion genotypes for each individual and scripts to compute the correlation between the differences in allele frequency in France and in Sweden. Finally, it contains the script to compute the mean heterozygosity calculated on all SNPs in individual.
 
-## 11. [Figures](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Figures)
+## 12. [Figures](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Figures)
 
 This folder contains the scripts to create the figures used in the paper. The first figure is missing as it was done using Google maps and Inkscape.
 
-## 12. [General_scripts](https://github.com/PAJOT-Basile/L_fabalis/tree/main/General_scripts)
+## 13. [General_scripts](https://github.com/PAJOT-Basile/L_fabalis/tree/main/General_scripts)
 
 This folder contains two scripts containing useful functions created to analyse, compute and represent genomic data in this study. Other functions were also created to be used everywhere. All the functions were created to work in coordination with the [tidyverse](https://www.tidyverse.org/) and the adegenet [(Thibaut Jombart et al, 2008)](https://pubmed.ncbi.nlm.nih.gov/18397895/) packages.
 At the beginnnig of aach function, a documentation was written.
 
-## 13. [Phenotypic_analysis](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Phenotypic_analysis)
+## 14. [Phenotypic_analysis](https://github.com/PAJOT-Basile/L_fabalis/tree/main/Phenotypic_analysis)
 
 This folder contains the scripts to run the phenotypic analysis of shell size and shell color variations along the transects in Sweden and in France. It is used to compute the tables of the best model and the cline parameters described in the paper.
 
