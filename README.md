@@ -11,7 +11,7 @@ This directory is composed of 14 folders.
 This folder contains the scrips used to run the SNP calling from the raw fastq files. It uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to parallelise the process for each of the indiviudals selected in the study. The SNP calling is done on 142 non-overlapping windows along the genome that are run in parallel to go faster.
 
 
-## 2. [02_Filter_VCF_File]([https://github.com/PAJOT-Basile/L_fabalis/tree/main/Phenotypic_analysis#phenotypic_analysis](https://github.com/PAJOT-Basile/L_fabalis/tree/main/02_Filter_VCF_File))
+## 2. [02_Filter_VCF_File](https://github.com/PAJOT-Basile/L_fabalis/tree/main/02_Filter_VCF_File)
 
 This folder contains the scripts and Pop map file to run the filtering of the raw VCF file that was obtained in step 01_SNP_calling. It uses the VCF file cut in 142 windows along the genome as input and filters each of these windows on the selected parameters. This step also uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to go faster. The outputs are several folders with a VCF and a corresponding stat file for each filtration step. Some of these filtration steps are defined as temporary and are suppressed automatically in the snakemake. 
 
