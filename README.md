@@ -8,16 +8,16 @@ This directory is composed of 14 folders.
 ## 1. [01_SNP_calling](https://github.com/PAJOT-Basile/L_fabalis/tree/main/01_SNP_calling)
 
 
-This folder contains the scrips used to run the SNP calling from the raw fastq files. It uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to parallelise the process for each of the indiviudals selected in the study. The SNP calling is done on 142 non-overlapping windows along the genome that are run in parallel to go faster.
+This folder contains the scrips used to run the SNP calling from the raw fastq files. It uses Snakemake [(Mölder et al, 2021)]((https://doi.org/10.12688/f1000research.29032.2) to parallelise the process for each of the indiviudals selected in the study. The SNP calling is done on 142 non-overlapping windows along the genome that are run in parallel to go faster.
 
 
 ## 2. [02_Filter_VCF_File](https://github.com/PAJOT-Basile/L_fabalis/tree/main/02_Filter_VCF_File)
 
-This folder contains the scripts and Pop map file to run the filtering of the raw VCF file that was obtained in step 01_SNP_calling. It uses the VCF file cut in 142 windows along the genome as input and filters each of these windows on the selected parameters. This step also uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to go faster. The outputs are several folders with a VCF and a corresponding stat file for each filtration step. Some of these filtration steps are defined as temporary and are suppressed automatically in the snakemake. 
+This folder contains the scripts and Pop map file to run the filtering of the raw VCF file that was obtained in step 01_SNP_calling. It uses the VCF file cut in 142 windows along the genome as input and filters each of these windows on the selected parameters. This step also uses Snakemake [(Mölder et al, 2021)]((https://doi.org/10.12688/f1000research.29032.2) to go faster. The outputs are several folders with a VCF and a corresponding stat file for each filtration step. Some of these filtration steps are defined as temporary and are suppressed automatically in the snakemake. 
 
 ## 3. [03_HMM](https://github.com/PAJOT-Basile/L_fabalis/tree/main/03_HMM)
 
-This folder contains the scripts to run the HMM from [Hofer et al, 2012](https://github.com/marqueda/HMM-detection-of-genomic-islands/tree/master), [Soria-Carrasco et al, 2014](https://pubmed.ncbi.nlm.nih.gov/24833390/) and [Marques et al, 2016](https://onlinelibrary.wiley.com/doi/full/10.1111/mec.13774). We run this using Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to go faster and run the same analysis on the two populations separately. The script using the HMM was slightly modified to return only two levels of differenciation rather than the three levels that were used in the orginal paper.
+This folder contains the scripts to run the HMM from [Hofer et al, 2012](https://github.com/marqueda/HMM-detection-of-genomic-islands/tree/master), [Soria-Carrasco et al, 2014](https://pubmed.ncbi.nlm.nih.gov/24833390/) and [Marques et al, 2016](https://onlinelibrary.wiley.com/doi/full/10.1111/mec.13774). We run this using Snakemake [(Mölder et al, 2021)]((https://doi.org/10.12688/f1000research.29032.2) to go faster and run the same analysis on the two populations separately. The script using the HMM was slightly modified to return only two levels of differenciation rather than the three levels that were used in the orginal paper.
 
 ## 4. [04_Delim_inversions](https://github.com/PAJOT-Basile/L_fabalis/tree/main/04_Delim_inversions)
 
@@ -26,12 +26,12 @@ Finally, we calculate the heterozygosity of the SNPs within the identified inver
 
 ## 5. [05_Linkage_disequilibrium](https://github.com/PAJOT-Basile/L_fabalis/tree/main/05_Linkage_disequilibrium)
 
-This folder contains the scripts to compute the mean LD between windows of 1e5 bp. It uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to parallelise on all the chromosomes at once to go faster and on the different populations to run them separately.
+This folder contains the scripts to compute the mean LD between windows of 1e5 bp. It uses Snakemake [(Mölder et al, 2021)]((https://doi.org/10.12688/f1000research.29032.2) to parallelise on all the chromosomes at once to go faster and on the different populations to run them separately.
 It also contains the script to calculate the percentage of individuals that share the same rearrangements for the different inversions. For example, if an individual is homozygote for the colinear version of the inversion, we look if it is homozygote for the colinear version on the other inversions. We run this process for each individual on all the inversions. This measure allows us to approximate linkage disequilibrium (LD) between inversions on the whole genome. This measure allows to regroup inversions located on the same chromosome as one inversion if they have a LD of 1.
 
 ## 6. [06_Cline_analysis](https://github.com/PAJOT-Basile/L_fabalis/tree/main/06_Cline_analysis)
 
-This folder contains the scripts to run the cline analyses on the highly differentiated SNPs between transects. It uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to parallelise the cline analyses on batches of 1000 SNPs to go faster. The cline functions that were used here were published in [Westram et al, 2018]( https://doi.org/10.1002/evl3.74), but were slightly modified to be more easily usable in my code and explanations were added to describe the function's functionning.
+This folder contains the scripts to run the cline analyses on the highly differentiated SNPs between transects. It uses Snakemake [(Mölder et al, 2021)]((https://doi.org/10.12688/f1000research.29032.2) to parallelise the cline analyses on batches of 1000 SNPs to go faster. The cline functions that were used here were published in [Westram et al, 2018]( https://doi.org/10.1002/evl3.74), but were slightly modified to be more easily usable in my code and explanations were added to describe the function's functionning.
 
 ## 7. [07_Genome_wide_FST](https://github.com/PAJOT-Basile/L_fabalis/tree/main/07_Genome_wide_FST)
 
