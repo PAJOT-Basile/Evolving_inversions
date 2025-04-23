@@ -1,0 +1,81 @@
+--------------------------------------------------------
+-----------------------  Variables  --------------------
+--------------------------------------------------------
+
+name: Variables
+########################  Paths to use  ###############################
+
+# Raw data path: where to find the raw data ?
+raw_data_path: "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/08_Hobs/VCF_File.vcf.gz"
+
+# Pop_map: path to the pop_map directory. This path is required to run the snakemake. It should contain one text file per population to analyse.
+# For each population, the text file should contain a list of paths to the sample files you want to run the processing on.
+pop_maps: "/shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/05_Linkage_Disequilibrium/Pop_map/"
+
+# Folder where all the temporary files will be stored
+tmp_path: "/shared/scratch/pacobar/bpajot/tmp/LD_computation/"
+
+# Where to save the final output data
+output_path: "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/05_LD_computations/"
+
+# Other parameters
+MAF: 0.3
+Thin: 2500
+Bin_size: 1e5
+
+
+---------------------------------------------------------
+-----------------------  Profile  -----------------------
+---------------------------------------------------------
+name: Profile
+########################  Cluster identification  ###############################
+cluster:
+  mkdir -p /shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/05_Linkage_Disequilibrium/logs/{rule}/error_files/ &&
+  mkdir -p /shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/05_Linkage_Disequilibrium/logs/{rule}/logs/ &&
+  sbatch
+    --account=pacobar
+    --partition={resources.partition}
+    --cpus-per-task={threads}
+    --mem={resources.mem_mb}
+    --job-name={rule}-{wildcards}
+    --output=/shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/05_Linkage_Disequilibrium/logs/{rule}/logs/{rule}-{wildcards}-%j.out
+    --error=/shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/05_Linkage_Disequilibrium/logs/{rule}/error_files/{rule}-{wildcards}-%j.err
+    --parsable
+
+########################  Resources to use  ###############################
+default-resources:
+  - partition=fast
+  - mem_mb=8000
+  - tmpdir="/shared/scratch/pacobar/bpajot/tmp/LD_computation/"
+
+########################  Parameters to use for the snakemake  ###############################
+restart-times: 3
+max-jobs-per-second: 10
+max-status-checks-per-second: 1
+local-cores: 1
+latency-wait: 10
+jobs: 40
+keep-going: True
+rerun-incomplete: True
+printshellcmds: True
+use-conda: True
+
+
+
+---------------------------------------------------------
+---------------------  Environments  --------------------
+---------------------------------------------------------
+name: Environments
+########################  Dependencies  ###############################
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bcftools = 1.16
+  - vcftools = 0.1.16
+  # R and R packages
+  - r = 4.3.1
+  - r-pacman
+  - r-tidyverse = 2.0.0
+  - r-argparse
