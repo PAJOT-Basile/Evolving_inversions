@@ -31,7 +31,7 @@ It also contains the script to calculate the percentage of individuals that shar
 
 ## 6. [06_Cline_analysis](https://github.com/PAJOT-Basile/L_fabalis/tree/main/06_Cline_analysis)
 
-This folder contains the scripts to run the cline analyses on the highly differentiated SNPs between transects. It uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to parallelise the cline analyses on batches of 1000 SNPs to go faster. The cline functions that were used here were published in [Le Moan et al, 2024](https://doi.org/10.1093/evlett/qrae014), but were slightly modified to be more easily usable in my code and explanations were added to describe the function's functionning.
+This folder contains the scripts to run the cline analyses on the highly differentiated SNPs between transects. It uses Snakemake [(Mölder et al, 2021)](https://f1000research.com/articles/10-33/v1) to parallelise the cline analyses on batches of 1000 SNPs to go faster. The cline functions that were used here were published in [Westram et al, 2018]( https://doi.org/10.1002/evl3.74), but were slightly modified to be more easily usable in my code and explanations were added to describe the function's functionning.
 
 ## 7. [07_Genome_wide_FST](https://github.com/PAJOT-Basile/L_fabalis/tree/main/07_Genome_wide_FST)
 
