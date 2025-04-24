@@ -28,6 +28,16 @@ This script will create new directories in the output path that was given in the
 
 ## Dependencies
 
-This uses Snakemake v.7.25.0 [(Mölder et al, 2021)](https://doi.org/10.12688/f1000research.29032.2) and relies on a conda environment.
-Additionally, R v 3.3.1 and a few R packages are needed: `tidyverse, ggpubr, argparse`. Their installation should be automated, but the conda environment creation can sometimes get blocked if the packages are not installed in the right version of R. Should this happen, load the packages by hand before executing the workflow.
-Finally, the `math` package is necessary in python3.
+
+```
+python3
+  math
+
+snakemake     # v.7.25.0 with a conda environment
+
+R             # v.3.3.1 at least
+  tidyverse
+  ggpubr
+  argparse
+
+```
