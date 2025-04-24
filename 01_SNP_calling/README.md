@@ -22,7 +22,7 @@ If you are lost, you can display an assistance message with:
 sbatch launcher.sh -h
 ```
 
-# What output to expect?
+## What output to expect?
 
 This script will create new directories in the output path that was given in the `configuration_file.yaml`. The files that appear in these directories are the final output. The script will also create directories in the given `tmp_path`, but these files will not be conserved .They will dissapear before the end of the Snakemake as they are defined as temporary files.
 
