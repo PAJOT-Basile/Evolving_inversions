@@ -30,14 +30,14 @@ This script will create new directories in the output path that was given in the
 
 
 ```
-python3
-  math
+- python3:
+    - math
 
-snakemake     # v.7.25.0 with a conda environment
+- snakemake     # v.7.25.0 with a conda environment
 
-R             # v.3.3.1 at least
-  tidyverse
-  ggpubr
-  argparse
+- R             # v.3.3.1 at least
+    - tidyverse
+    - ggpubr
+    - argparse
 
 ```
