@@ -4,7 +4,7 @@
 
 This directory contains the scripts needed to do the SNP calling. It contains a launcher that is used to start running the Snakemake [(Mölder et al, 2021)](https://doi.org/10.12688/f1000research.29032.2), the snakefile that is called `Processing_of_short-read_data.snk`. This file contains the workflow for each of the samples. 
 There is also a configuration file that is used to prepare the environment for the Snakemake to run **as well as variables necessary for the Snakemkae to work**.
-Finally, there is a directory calle `Scripts_snk` that contains custom scripts to prepare the conda ennvironments and the configuration files for the Snakemake to run on its own. It also contains an Rscript used to plot stats on the VCF file once the SNP calling is done and a script containing custom python functions that are called in the Snakemake.
+Finally, there is a directory called `Scripts_snk` that contains custom scripts to prepare the conda ennvironments and the configuration files for the Snakemake to run on its own. It also contains an Rscript used to plot stats on the VCF file once the SNP calling is done and a script containing custom python functions that are called in the Snakemake.
 
 ## How to use these scripts?
 
