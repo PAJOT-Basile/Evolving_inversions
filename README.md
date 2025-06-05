@@ -1,4 +1,4 @@
-# Parallelism in ecotype differenciation between two hybrid zones of _Littorina fabalis_
+# Evolving inversions: the genomic architecture of parallel snail ecotypes in France and Sweden
 
 
 This directory contains all the scripts allowing to replicate analyses to study parallel differenciation between two pairs of ecotypes of _Littorina fabalis_ in two locations: Sweden and France. As the Swedish population was already studied in a previous paper [(Le Moan et al, 2024)](https://academic.oup.com/evlett/advance-article/doi/10.1093/evlett/qrae014/7656805), this population is taken as a reference and always presented first.
