@@ -7,7 +7,7 @@ if (!require("patchwork")) devtools::install_github("thomasp85/patchwork")
 
 
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################################ Useful variables ################################
 # Basic theme to use in the graphs
@@ -15,7 +15,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 30))
 
 # Position of the inversions
-position_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+position_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                                   sep = "\t", header = TRUE)
 
 grouped_inversions <- position_inversions %>% 
@@ -23,7 +23,7 @@ grouped_inversions <- position_inversions %>%
   mutate(Inversion = Inversion_grouped)
 
 ################## Import the vcf file  ##################
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 # We add the poputations to the vcf object
@@ -39,7 +39,7 @@ pca <- scaleGen(data, NA.method="mean", scale=FALSE, center=TRUE) %>%
   dudi.pca(scale=TRUE, nf=5, scannf=FALSE)
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -103,7 +103,7 @@ Delta_freqs_whole_genome <- get_delta_freqs_and_F4(
 
 # Save the output
 Delta_freqs_whole_genome %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Delta_freqs_whole_genome.tsv",
+  write.table("../../Output/Sweden_France_parallelism/Delta_freqs_whole_genome.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 
 Delta_freqs_whole_genome <- Delta_freqs_whole_genome %>% 
@@ -419,5 +419,5 @@ ggarrange(local_pca,
           nrow=3,
           common.legend = TRUE,
           legend = "top") %>% 
-  ggsave(plot = ., filename = "/shared/home/bpajot/Report_presentations/Figures/Anglais/Figure_4.png", device = "png", units = "px",
+  ggsave(plot = ., filename = "../../Output/Figures/Figure_4.png", device = "png", units = "px",
          height = 2100, width = 1800, scale = 3.5)

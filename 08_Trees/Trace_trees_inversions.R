@@ -15,12 +15,12 @@ library(MetBrewer)
 
 ################## Import data  ##################
 # Import the inversion delimitations
-delim_invs <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+delim_invs <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                          sep = "\t", header = TRUE) %>% 
   mutate(Is_inversion = TRUE,
          Inversion = Inversion_grouped) %>% 
   select(-Inversion_grouped) %>% 
-  rbind(read.table("/shared/home/bpajot/fabalis/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/08_Trees/Not_inversions.tsv",
+  rbind(read.table("./Not_inversions.tsv",
                    sep = "\t", header = TRUE) %>%
           mutate(Is_inversion = FALSE,
                  Length = End - Start) %>%
@@ -31,7 +31,7 @@ delim_invs <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_ill
   ))
 
 # Import the output of the local PCA
-groups_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+groups_pca <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                          sep = "\t", header = TRUE) %>% 
   # Filter to get only the inversions that are kept after the 4 step filtering of inversions
   inner_join(delim_invs,
@@ -40,19 +40,19 @@ groups_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_ill
 
 
 # Import the reference individuals for the cases where we are working with colinear genome
-ref_individuals <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/France_exposed.txt",
+ref_individuals <- read.table("../../Output/Sweden_France_parallelism/Reference_indivs/France_exposed.txt",
                 sep = "\t", header = FALSE) %>%
   mutate(Population = "France",
          Exposition = "Exposed") %>%
-  rbind(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/France_sheltered.txt",
+  rbind(read.table("../../Output/Sweden_France_parallelism/Reference_indivs/France_sheltered.txt",
                   sep = "\t", header = FALSE) %>%
   mutate(Population = "France",
          Exposition = "Sheltered")) %>%
-  rbind(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/Sweden_exposed.txt",
+  rbind(read.table("../../Output/Sweden_France_parallelism/Reference_indivs/Sweden_exposed.txt",
                   sep = "\t", header = FALSE) %>%
   mutate(Population = "Sweden",
          Exposition = "Exposed")) %>%
-    rbind(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/Sweden_sheltered.txt",
+    rbind(read.table("../../Output/Sweden_France_parallelism/Reference_indivs/Sweden_sheltered.txt",
                     sep = "\t", header = FALSE) %>%
   mutate(Population = "Sweden",
          Exposition = "Sheltered")) %>%
@@ -62,10 +62,10 @@ ref_individuals <- read.table("/shared/projects/pacobar/finalresult/Littorina_WG
 # Define paths to use for softwares and where to find the vcf file
 vcftools <- "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools"
 bcftools <- "/shared/software/miniconda/envs/bcftools-1.9/bin/bcftools"
-vcf_file <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/08_Hobs/VCF_File.vcf.gz"
+vcf_file <- "../../Output/Sweden_France_parallelism/02_Filter_VCF/08_Hobs/VCF_File.vcf.gz"
 
 # Path to write output
-output_path <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/08_Trees/"
+output_path <- "../../Output/Sweden_France_parallelism/08_Trees/"
 
 print("Imported data")
 
@@ -101,7 +101,7 @@ Create_dir_not_exist <- function(paths){
   }
 }
 
-Subset_genetic_data <- function(inversion, delim_invs, groups_pca, vcf_file, output_path, .is_inversion = is_inversion, .vcftools = "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools", .bcftools = "/shared/software/miniconda/envs/bcftools-1.9/bin/bcftools",
+Subset_genetic_data <- function(inversion, delim_invs, groups_pca, vcf_file, output_path, .is_inversion = is_inversion, .vcftools = vcftools, .bcftools = "/shared/software/miniconda/envs/bcftools-1.9/bin/bcftools",
                                 force = FALSE){
   # First, create the directories to use in the function
   Create_dir_not_exist(c(paste0(output_path, "List_pos_per_inversion/"),
@@ -260,7 +260,7 @@ Sample_genotypes <- function(df){
 }
 
 # Function to prepare a haploid genome to trace the trees
-Prepare_haploid_genome <- function(inversion, output_path, genetic_data = data, .vcftools = "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools", force = FALSE){
+Prepare_haploid_genome <- function(inversion, output_path, genetic_data = data, .vcftools = vcftools, force = FALSE){
   # First create the directories we need to use
   Create_dir_not_exist(c(paste0(output_path, "Fastas_inversions/"),
                          paste0(output_path, "Ped_inversions/")))
@@ -490,7 +490,7 @@ Run_and_trace_local_pca <- function(inversion, .output_path = output_path, .grou
          y = paste0("PC2 (",round(pca$eig[2]/sum(pca$eig)*100),"%)")) +
     theme_classic() +
     theme(text = element_text(size = 20))
-}
+  }
 return(list(
   "Plot" = local_pca,
   "Genetic_data" = data,

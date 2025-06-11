@@ -17,20 +17,20 @@ bin_size <- 1e5
 
 
 ############################ Load inputs to HMM ##########################
-input_delta_freqs_france <- read.csv("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/03_HMM/Data/France.weir.fst",
+input_delta_freqs_france <- read.csv("../../Output/Sweden_France_parallelism/03_HMM/Data/France.weir.fst",
                                      header = TRUE,
                                      sep = "\t") %>% 
   rownames_to_column("correspondance") %>% 
   unite(Position, CHROM, POS)
 
-input_delta_freqs_sweden <- read.csv("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/03_HMM/Data/Sweden.weir.fst",
+input_delta_freqs_sweden <- read.csv("../../Output/Sweden_France_parallelism/03_HMM/Data/Sweden.weir.fst",
                                      header = TRUE,
                                      sep = "\t") %>% 
   rownames_to_column("correspondance") %>% 
   unite(Position, CHROM, POS)
 print("Finished importing input")
 ############################ Load HMM output ##########################
-output_delta_freqs_france <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/03_HMM/Results_HMM/France.weir_2state_HMMstates.txt",
+output_delta_freqs_france <- read.table("../../Output/Sweden_France_parallelism/03_HMM/Results_HMM/France.weir_2state_HMMstates.txt",
                                         header = TRUE,
                                         sep = " ") %>% 
   rownames_to_column("correspondance") %>% 
@@ -45,7 +45,7 @@ output_delta_freqs_france <- read.table("/shared/projects/pacobar/finalresult/Li
   mutate(Position = Position %>% as.numeric) %>% 
   filter(grepl("LG", Chromosome))
 
-output_delta_freqs_sweden <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/03_HMM/Results_HMM/Sweden.weir_2state_HMMstates.txt",
+output_delta_freqs_sweden <- read.table("../../Output/Sweden_France_parallelism/03_HMM/Results_HMM/Sweden.weir_2state_HMMstates.txt",
                                         header = TRUE,
                                         sep = " ") %>% 
   rownames_to_column("correspondance") %>% 
@@ -249,5 +249,5 @@ Positions_candidate_inversions_france %>%
   mutate(Population = "France") %>% 
   rbind(Positions_candidate_inversions_sweden %>% 
           mutate(Population = "Sweden")) %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv", sep = "\t",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv", sep = "\t",
               col.names = TRUE, row.names = FALSE, quote = FALSE)

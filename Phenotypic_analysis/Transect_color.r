@@ -5,10 +5,10 @@ for (lib in libraries){
   pacman::p_load(lib, character.only = TRUE)
 }
 ################################ Useful functions ################################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################################ Import metadata ################################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%

@@ -14,7 +14,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 # Position of the inversions
-position_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+position_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                                   sep = "\t", header = TRUE)
 
 grouped_inversions <- position_inversions %>% 
@@ -22,10 +22,10 @@ grouped_inversions <- position_inversions %>%
   mutate(Inversion = Inversion_grouped)
 
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################## Import the vcf file  ##################
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 # We add the poputations to the vcf object
@@ -43,7 +43,7 @@ X <- scaleGen(data, NA.method="mean", scale=FALSE, center=TRUE)
 pca <- dudi.pca(X, scale=TRUE, nf=5, scannf=FALSE)
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -165,20 +165,20 @@ Pheno_sweden <- metadata %>%
 metadata %>%
  filter(Population == "Sweden") %>%
  select(Sample_Name) %>%
- write.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Swedish_pop.txt",
+ write.table("../../Output/Data/Reference_indivs_expos/Swedish_pop.txt",
              quote = FALSE, row.names = FALSE, col.names = FALSE, sep = "\t")
 
 metadata %>%
  filter(Population == "France") %>%
  select(Sample_Name) %>%
- write.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
+ write.table("../../Output/Data/Reference_indivs_expos/French_pop.txt",
              quote = FALSE, row.names = FALSE, col.names = FALSE, sep = "\t")
 ## First, we import the relatedness calculated with vcftools with this command lines
 ## France
-kin_france <- read.table("../../Sweden_France_parallelism/Relatedness/French_scaled_relatedness.tsv", header = FALSE)
+kin_france <- read.table("../../Output/Sweden_France_parallelism/10_GWAS/Relatedness/French_scaled_relatedness.tsv", header = FALSE)
 
 ## Sweden
-kin_sweden <- read.table("../../Sweden_France_parallelism/Relatedness/Swedish_scaled_relatedness.tsv", header = FALSE)
+kin_sweden <- read.table("../../Output/Sweden_France_parallelism/10_GWAS/Relatedness/Swedish_scaled_relatedness.tsv", header = FALSE)
 
 ################## Make the gData objects  ##################
 ## France
@@ -211,5 +211,5 @@ GWAS_france$GWAResult$Pheno_france %>%
           mutate(pValue = -log10(pValue)) %>% 
           rename(logp_val = pValue) %>% 
           mutate(Population = "Sweden")) %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/GWAS/GWAS_output.tsv",
+  write.table("../../Output/Sweden_France_parallelism/10_GWAS/GWAS_output.tsv",
               col.names = TRUE, row.names = TRUE, quote = FALSE, sep = "\t")

@@ -5,7 +5,7 @@ rm(libraries)
 
 
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 # Function to count the number of unique positions in a dataframe containing the "Position" column
 count_nb_unique_positions <- function(df){
@@ -17,17 +17,17 @@ count_nb_unique_positions <- function(df){
 }
 
 ################## Import SNPs with deltafreq > 30 %  ##################
-High_delta_freqs <- read.table("/shared/home/bpajot/fabalis/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Priors/High_delta_freqs.tsv",
+High_delta_freqs <- read.table("../Output/Sweden_France_parallelism/06_Cline_analysis/Priors/High_delta_freqs.tsv",
                                sep = "\t", header = TRUE)
 
 ################### Import the cline parameters  ##################
-Params_clines_high_delta_freqs <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Cline_parameters.tsv",
+Params_clines_high_delta_freqs <- read.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Cline_parameters.tsv",
                                              sep = "\t", header = TRUE) %>% 
   unique %>% 
   select_clinal_SNPs()
 
 ################### Import the inversion delimitations  ##################
-Delim_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+Delim_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                                sep = "\t", header = TRUE) 
 
 ################### Nb SNPs highly diff (deltafreq > 0.3)  ##################
@@ -234,7 +234,7 @@ Summary_stats <- data.frame(
 
 # Save the ouptut
 Summary_stats %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Summary_stats.tsv",
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Summary_stats.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE) 
 
 ###################  Save names of parallel and anti-parallel SNPs  ##################
@@ -254,20 +254,20 @@ Antipara_cline_SNPs <- antipara_clines %>%
 
 ###################  Calculate mean FST between ecotypes on parallel SNPs  ##################
 # Import the vcf file
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/07_Genome_wide_FST/Reference_indivs.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/07_Genome_wide_FST/Reference_indivs.vcf.gz") %>% 
   vcfR2genind()
 
 # Import the reference individuals
-ref_indivs <- read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/France_exposed.txt", header = FALSE,
+ref_indivs <- read.table("../../Output/Data/Reference_indivs_expos/France_exposed.txt", header = FALSE,
                          sep = "\t", col.names = "Sample_Name") %>% 
   mutate(Exposition = "Fr_Exp") %>% 
-  rbind(read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/France_sheltered.txt", header = FALSE,
+  rbind(read.table("../../Output/Data/Reference_indivs_expos/France_sheltered.txt", header = FALSE,
                    sep = "\t", col.names = "Sample_Name") %>% 
           mutate(Exposition = "Fr_Shl")) %>% 
-  rbind(read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Sweden_exposed.txt", header = FALSE,
+  rbind(read.table("../../Output/Data/Reference_indivs_expos/Sweden_exposed.txt", header = FALSE,
                    sep = "\t", col.names = "Sample_Name") %>% 
           mutate(Exposition = "Sw_Exp")) %>% 
-  rbind(read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Sweden_sheltered.txt", header = FALSE,
+  rbind(read.table("../../Output/Data/Reference_indivs_expos/Sweden_sheltered.txt", header = FALSE,
                    sep = "\t", col.names = "Sample_Name") %>% 
           mutate(Exposition = "Sw_Shl"))
 
@@ -294,7 +294,7 @@ Fst_parallel$Fsts %>%
                names_to = "Ecotype_2",
                values_to = "Fst") %>% 
   drop_na %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Parallel_SNPs_Fst.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Parallel_SNPs_Fst.tsv")
 
 Fst_parallel$Pvalues %>% 
   as.data.frame %>% 
@@ -303,7 +303,7 @@ Fst_parallel$Pvalues %>%
                names_to = "Ecotype_2",
                values_to = "P_value") %>% 
   drop_na %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Parallel_SNPs_P_value.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Parallel_SNPs_P_value.tsv")
 
 ###################  Calculate mean FST between ecotypes on anti-parallel SNPs  ##################
 data_antipara <- data[loc = Antipara_cline_SNPs] %>% 
@@ -319,7 +319,7 @@ Fst_antiparallel$Fsts %>%
                names_to = "Ecotype_2",
                values_to = "Fst") %>% 
   drop_na %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Anti_parallel_SNPs_Fst.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Anti_parallel_SNPs_Fst.tsv")
 
 Fst_antiparallel$Pvalues %>% 
   as.data.frame %>% 
@@ -328,7 +328,7 @@ Fst_antiparallel$Pvalues %>%
                names_to = "Ecotype_2",
                values_to = "P_value") %>% 
   drop_na %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Anti_parallel_SNPs_P_value.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Anti_parallel_SNPs_P_value.tsv")
 
 ###################  Calculate mean FST between ecotypes on private_france  ##################
 Private_fr <- private_fr %>% 
@@ -351,7 +351,7 @@ Fst_private_fr$Fsts %>%
                values_to = "Fst") %>% 
   drop_na %>% 
   filter(grepl("Fr", Ecotype_1) & grepl("Fr", Ecotype_2)) %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Private_France_SNPs.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Private_France_SNPs.tsv")
 
 Fst_private_fr$Pvalues %>% 
   as.data.frame %>% 
@@ -361,7 +361,7 @@ Fst_private_fr$Pvalues %>%
                values_to = "P_value") %>% 
   drop_na %>% 
   filter(grepl("Fr", Ecotype_1) & grepl("Fr", Ecotype_2)) %>%
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Private_France_SNPs_P_value.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Private_France_SNPs_P_value.tsv")
 
 
 ###################  Calculate mean FST between ecotypes on private_sweden  ##################
@@ -385,7 +385,7 @@ Fst_private_sw$Fsts %>%
                values_to = "Fst") %>% 
   drop_na %>% 
   filter(grepl("Sw", Ecotype_1) & grepl("Sw", Ecotype_2)) %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Private_Sweden_SNPs_Fst.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Private_Sweden_SNPs_Fst.tsv")
 
 Fst_private_sw$Pvalues %>% 
   as.data.frame %>% 
@@ -395,5 +395,5 @@ Fst_private_sw$Pvalues %>%
                values_to = "P_value") %>% 
   drop_na %>% 
   filter(grepl("Sw", Ecotype_1) & grepl("Sw", Ecotype_2)) %>%
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Private_Sweden_SNPs_P_value.tsv")
+  write.table("../../Output/Sweden_France_parallelism/06_Cline_analysis/Private_Sweden_SNPs_P_value.tsv")
 

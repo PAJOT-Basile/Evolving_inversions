@@ -75,9 +75,8 @@ module load conda
 echo "Starting Snakemake execution"
 # Run the snakemake file
 snakemake -s "${HERE}/${SNAKEFILE}" --profile "${HERE}/Cluster_profile" --configfile "${HERE}/Configuration_files/Variables_config.yaml"
-# /shared/software/miniconda/envs/snakemake-8.9.0/bin/snakemake -s "${HERE}/${SNAKEFILE}" --profile "${HERE}/Cluster_profile/" --configfile "${HERE}/Configuration_files/Variables_config.yaml"
 
-# TODO essayer de jouer avec les reports
+# Unload modules
 module unload snakemake/8.9.0
 module unload conda
 echo "Snakemake execution ...            DONE"

@@ -6,18 +6,18 @@ rm(libraries)
 
 
 ########## Useful functions ##########
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 ########## Useful variables ##########
 my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ########## Import data ##########
-GWAS <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/GWAS/GWAS_output.tsv",
+GWAS <- read.table("../../Output/Sweden_France_parallelism/10_GWAS/GWAS_output.tsv",
                    sep = "\t", header = TRUE) %>% 
   rename(log_pval = logp_val)
 
 # Import metadata
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -68,7 +68,7 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
 
 
 # Import the genetic data
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 # We add the poputations and expositions to the vcf object
@@ -140,7 +140,7 @@ order_snps <- c(
     my_theme +
     labs(y = "Shell size (mm)") +
     facet_grid2(Population ~ Position)) %>% 
-  ggsave(filename = "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/GWAS/Size_QTL_boxplots.png",
+  ggsave(filename = "../../Output/Sweden_France_parallelism/10_GWAS/Size_QTL_boxplots.png",
          height = 800, width = 1800, units = "px", scale = 5)
 
 ########## Boxplots of colors ##########
@@ -210,7 +210,7 @@ order_snps <- c(
     my_theme +
     labs(x = "Shell color") +
     facet_wrap(vars(Position))) %>% 
-  ggsave(filename = "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/GWAS/Color_QTL_boxplots_Sweden.png",
+  ggsave(filename = "../../Output/Sweden_France_parallelism/10_GWAS/Color_QTL_boxplots_Sweden.png",
          height = 1200, width = 1800, units = "px", scale = 5)
 
 ## Then France
@@ -238,5 +238,5 @@ order_snps <- c(
     my_theme +
     labs(x = "Shell color") +
     facet_wrap(vars(Position))) %>% 
-  ggsave(filename = "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/GWAS/Color_QTL_boxplots_France.png",
+  ggsave(filename = "../../Output/Sweden_France_parallelism/10_GWAS/Color_QTL_boxplots_France.png",
          height = 1200, width = 1800, units = "px", scale = 5)

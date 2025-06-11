@@ -9,7 +9,7 @@ rm(libraries)
 #library(tidyverse); library(ggforce); library(viridis); library(ggnewscale); library(LaplacesDemon, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/"); library(tie, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/"); library(bbmle); library(zeallot); library(docstring, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/")
 
 # Import functions from the `Cline_functions.R` script
-source("/shared/projects//pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Cline_functions.R")
+source("./Cline_functions.R")
 
 ################################################################################
 ######################### 1. Useful functions  #################################
@@ -2716,7 +2716,7 @@ Run_and_trace_phylogeny <- function(inversion, .output_path = output_path, .list
     "Divergence" = Divergence_karyotypes_countries
   ))
 }
-print("Finished function importation")
+print("Functions imported successfully")
 
 
 

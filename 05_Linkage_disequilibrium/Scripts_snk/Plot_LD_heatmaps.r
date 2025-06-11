@@ -21,12 +21,12 @@ bin_size <- xargs$bin_size %>% as.numeric
 # Function to create a color palette
 colfunc <- colorRampPalette(colors = c("#813d32","#ef852f","#fdc441" ,"#e3cfb4") %>% rev, bias = 2)
 
-LG6_heatmap <- read.table(input_path, header = TRUE, sep = "\t") %>% 
+LG_heatmap <- read.table(input_path, header = TRUE, sep = "\t") %>% 
   rename(Chromosome = CHR,
          LD = R.2)
 print("Imported")
 # Compute a mean LD by the chosen bin
-(LG6_heatmap %>% 
+(LG_heatmap %>% 
   mutate(Position1 = (POS1 / bin_size) %>% round,
          Position2 = (POS2 / bin_size) %>% round) %>% 
   group_by(Position1, Position2) %>% 

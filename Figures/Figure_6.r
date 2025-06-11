@@ -18,11 +18,11 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################## Import data  ##################
 # Positions of the inversions
-position_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+position_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                                   sep = "\t", header = TRUE) %>% 
   # Prepare the variables to trace the trees
   mutate(Is_inversion = TRUE,
@@ -37,7 +37,7 @@ grouped_inversions <- position_inversions %>%
   mutate(Inversion = Inversion_grouped)
 
 # Import the vcf file
-vcf_file <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
+vcf_file <- "../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
 data <- read.vcfR(vcf_file) %>% 
   vcfR2genind()
 
@@ -49,7 +49,7 @@ data@other$exposition[which(data@other$exposition == "TRANSI")] <- "TRANS" %>% a
 data@other$exposition <- data@other$exposition %>% droplevels()
 
 # Import metadata on the individuals
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -99,12 +99,12 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
          Shell_color_morphology = ifelse(! Shell_color_morphology %in% c("Banded", "Square"), "Uniform", "Banded"))
 
 # Import the delta freqs for the whole genome
-Delta_freqs_whole_genome <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Delta_freqs_whole_genome.tsv",
+Delta_freqs_whole_genome <- read.table("../../Output/Sweden_France_parallelism/Delta_freqs_whole_genome.tsv",
                                        sep = "\t", header = TRUE) %>% 
   select_good_SNPs(Delta_freq_Sweden)
 
 # Import the local PCA per inversion
-groups_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+groups_pca <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                          sep = "\t", header = TRUE) %>% 
   # Filter to get only the inversions that are kept after the 4 step filtering of inversions
   inner_join(position_inversions,
@@ -112,19 +112,19 @@ groups_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_ill
              relationship = "many-to-many")
 
 # Import the reference individuals
-ref_individuals <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/France_exposed.txt",
+ref_individuals <- read.table("../../Output/Sweden_France_parallelism/Data/Reference_indivs/France_exposed.txt",
                               sep = "\t", header = FALSE) %>%
   mutate(Population = "France",
          Exposition = "Exposed") %>%
-  rbind(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/France_sheltered.txt",
+  rbind(read.table("../../Output/Sweden_France_parallelism/Data/Reference_indivs/France_sheltered.txt",
                    sep = "\t", header = FALSE) %>%
           mutate(Population = "France",
                  Exposition = "Sheltered")) %>%
-  rbind(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/Sweden_exposed.txt",
+  rbind(read.table("../../Output/Sweden_France_parallelism/Data/Reference_indivs/Sweden_exposed.txt",
                    sep = "\t", header = FALSE) %>%
           mutate(Population = "Sweden",
                  Exposition = "Exposed")) %>%
-  rbind(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Reference_indivs/Sweden_sheltered.txt",
+  rbind(read.table("../../Output/Sweden_France_parallelism/Data/Reference_indivs/Sweden_sheltered.txt",
                    sep = "\t", header = FALSE) %>%
           mutate(Population = "Sweden",
                  Exposition = "Sheltered")) %>%
@@ -192,81 +192,8 @@ Pheno_sweden <- metadata %>%
   column_to_rownames("Sample_Name")
 
 ################## Scaled relatedness matrix (calculated from vcftools)  ##################
-# First, we need to select the reference individuals needed to calculate the relatedness and
-# save them in text files
-# metadata %>%
-#  filter(Population == "Sweden") %>%
-#  select(Sample_Name) %>%
-#  write.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Swedish_pop.txt",
-#              quote = FALSE, row.names = FALSE, col.names = FALSE, sep = "\t")
-# 
-# metadata %>%
-#  filter(Population == "France") %>%
-#  select(Sample_Name) %>%
-#  write.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
-#              quote = FALSE, row.names = FALSE, col.names = FALSE, sep = "\t")
-## First, we import the relatedness calculated with vcftools with this command lines
-### France
-# vcf_file <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
-# vcftools <- "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools"
-# system2(vcftools,args =c(paste0("--gzvcf ",
-#                                vcf_file,
-#                                " --relatedness",
-#                                " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
-#                                " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness")))
-relatedness_france <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness.relatedness", header = TRUE) %>%
-  rename(Relatedness = RELATEDNESS_AJK) %>%
-  pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
-  column_to_rownames("INDV1")
-
-## Sweden
-# system2(vcftools,args =c(paste0("--gzvcf ",
-#                                vcf_file,
-#                                " --relatedness",
-#                                " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Swedish_pop.txt",
-#                                " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness")))
-relatedness_sweden <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness.relatedness", header = TRUE) %>%
-  rename(Relatedness = RELATEDNESS_AJK) %>%
-  pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
-  column_to_rownames("INDV1")
-
-# The matrix is not symmetrical but triangular, so, we make it symmetrical by hand
-## France
-for (i in 1:nrow(relatedness_france)){
-  for (j in 1:ncol(relatedness_france)){
-    if (i == j){
-      relatedness_france[i, j] <- 1
-    }else if (relatedness_france[i, j] %>% is.na){
-      relatedness_france[i, j] <- relatedness_france[j, i]
-    }
-  }
-}
-
-## Sweden
-for (i in 1:nrow(relatedness_sweden)){
-  for (j in 1:ncol(relatedness_sweden)){
-    if (i == j){
-      relatedness_sweden[i, j] <- 1
-    }else if (relatedness_sweden[i, j] %>% is.na){
-      relatedness_sweden[i, j] <- relatedness_sweden[j, i]
-    }
-  }
-}
-
-# Now, we scale the matrix to only have a positive relatedness between 0 and 1
-## France
-min_rel_france <- relatedness_france %>% min
-max_rel_france <- relatedness_france %>% max
-kin_france <- relatedness_france %>% 
-  mutate(across(everything(), .fns = function(x) (x + abs(min_rel_france)) / (max_rel_france - min_rel_france))) %>% 
-  as.matrix
-
-## Sweden
-min_rel_sweden <- relatedness_sweden %>% min
-max_rel_sweden <- relatedness_sweden %>% max
-kin_sweden <- relatedness_sweden %>% 
-  mutate(across(everything(), .fns = function(x) (x + abs(min_rel_sweden)) / (max_rel_sweden - min_rel_sweden))) %>% 
-  as.matrix
+relatedness_france <- read.table("../../Output/Sweden_France_parallelism/10_GWAS/Relatedness/French_scaled_relatedness.tsv", header = TRUE)
+relatedness_sweden <- read.table("../../Output/Sweden_France_parallelism/10_GWAS/Relatedness/Swedish_scaled_relatedness.tsv", header = TRUE)
 
 ################## Make the gData objects  ##################
 ## France
@@ -299,7 +226,7 @@ GWAS_sweden <- runSingleTraitGwas(gData_sweden)
 #           mutate(pValue = -log10(pValue)) %>% 
 #           rename(logp_val = pValue) %>% 
 #           mutate(Population = "Sweden")) %>% 
-#   write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/GWAS/GWAS_output.tsv",
+#   write.table("../../Output/Sweden_France_parallelism/GWAS/GWAS_output.tsv",
 #               col.names = TRUE, row.names = TRUE, quote = FALSE, sep = "\t")
 
 ################## Plot the results  ##################
@@ -400,7 +327,7 @@ Local_PCA <- clust_groups_together %>%
 rm(clust_groups_together, color_palette)
 ################## Make a tree of the inversion content  ##################
 # Path to write output
-output_path <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/08_Trees/"
+output_path <- "../../Output/Sweden_France_parallelism/08_Trees/"
 
 # Change the table of the delimitation of inversions to be compatible with the functions
 delim_invs <- position_inversions %>% 
@@ -677,5 +604,5 @@ Pca_tree <- Local_PCA + Tree +
   plot_layout(design = layout_pca_tree)
 
 (GWAS_Color / Pca_tree / Clines_along_transect) %>% 
-  ggsave(plot = ., filename = "/shared/home/bpajot/Report_presentations/Figures/Anglais/Figure_6.png", device = "png", units = "px",
+  ggsave(plot = ., filename = "../../Output/Figures/Figure_6.png", device = "png", units = "px",
          height = 1800, width = 1500, scale = 3.5)

@@ -9,7 +9,7 @@ if (!require("patchwork")) devtools::install_github("thomasp85/pacthwork")
 
 
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################################ Useful variables ################################
 # Color palette to be reused everywhere with the shell size
@@ -19,7 +19,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ################## Import the vcf file  ##################
-data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/outputs/Filter_VCF_Files/11_LAM_and_LOK/VCF_File_Hobs.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 # We add the poputations to the vcf object
@@ -45,7 +45,7 @@ var_ax2 <- ((pca$eig[2] / sum(pca$eig)) * 100) %>% round(digits = 2)
 var_ax3 <- ((pca$eig[3] / sum(pca$eig)) * 100) %>% round(digits = 2)
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%

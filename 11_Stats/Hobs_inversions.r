@@ -8,7 +8,7 @@ rm(libraries)
 my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 ########## Useful functions ##########
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 calculate_heterozygosity <- function(genetic_data, exposition, ...){
   # Add the sample names to the genetic table
@@ -117,11 +117,11 @@ Find_positions_in_split_invs <- function(delim_invs, genetic_data, .chromosome =
 #
 ########## Import data ##########
 # Import the genetic data
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 # Import the metadata of the individuals
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -162,11 +162,11 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
   droplevels
 
 # Import the pca outputs
-output_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+output_pca <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                          sep = "\t", header = TRUE)
 
 # Import the delimitation of the inversions
-delim_invs <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+delim_invs <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                         sep = "\t", header = TRUE) %>% 
   # Prepare the variables to trace the trees
   mutate(Is_split = case_when(
@@ -248,7 +248,7 @@ for (inversion in delim_invs$Inversion %>% unique){
     labs(x = "PCA clusters",
          y = "Individual heterozygosity") +
     my_theme) %>% 
-  ggsave(filename = "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/10_Stats/Heterozygosity_per_inv_1.png",
+  ggsave(filename = "../../Output/Sweden_France_parallelism/11_Stats/Heterozygosity_per_inv_1.png",
          scale = 4, height = 500, width = 1800, units = "px")
 
 (summary_df %>% 
@@ -275,5 +275,5 @@ for (inversion in delim_invs$Inversion %>% unique){
     labs(x = "PCA clusters",
          y = "Individual heterozygosity") +
     my_theme) %>% 
-  ggsave(filename = "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/10_Stats/Heterozygosity_per_inv_2.png",
+  ggsave(filename = "../../Output/Sweden_France_parallelism/11_Stats/Heterozygosity_per_inv_2.png",
          scale = 4, height = 500, width = 1800, units = "px")

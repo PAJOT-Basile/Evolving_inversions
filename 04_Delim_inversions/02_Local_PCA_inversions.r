@@ -5,27 +5,27 @@ pacman::p_load(libraries, character.only = TRUE)
 rm(libraries)
 
 ############################ Useful functions ##########################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 my_theme <- theme_bw() +
   theme(text = element_text(size = 30))
 
 # Import the candidate regions for the inversions
 ## Sweden
-Sweden_candidate_regions <- read_tsv("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
+Sweden_candidate_regions <- read_tsv("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
                                      col_names = TRUE) %>% 
   mutate(Chromosome = Chromosome %>%
-           factor(levels = read_tsv("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
+           factor(levels = read_tsv("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
                                     col_names = TRUE) %>% 
                     select(Chromosome) %>% unique %>% 
                     arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
                     as.vector %>% unlist %>% unname)) %>% 
   filter(Population == "Sweden")
 ## France
-France_candidate_regions <- read_tsv("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
+France_candidate_regions <- read_tsv("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
                                      col_names = TRUE) %>% 
   mutate(Chromosome = Chromosome %>%
-           factor(levels = read_tsv("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
+           factor(levels = read_tsv("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions.tsv",
                                     col_names = TRUE) %>% 
                     select(Chromosome) %>% unique %>% 
                     arrange(as.numeric(gsub("\\D*(\\d+).*", "\\1", Chromosome))) %>% 
@@ -36,7 +36,7 @@ France_candidate_regions <- read_tsv("/shared/projects/pacobar/finalresult/Litto
     Inversion == "Inv_2.3" ~ "Inv_2.2",
     TRUE ~ Inversion))
 # Import the vcf file
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 data@pop <- (data@tab %>% rownames %>% str_split_fixed(., "_", 4))[, 3] %>% as.factor
@@ -148,7 +148,7 @@ Confirmed_inversion <- Sweden_candidate_regions %>%
 
 # Write the output
 Confirmed_inversion %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversion_post_pca.tsv",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversion_post_pca.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 
 ############### Save output ###############
@@ -162,6 +162,6 @@ pcas_candidate_inversions_france %>%
   inner_join(correspondance_table, by = c("Chromosome", "Isl_diff", "Population"), relationship = "many-to-one") %>% 
   select(-Isl_diff) %>% 
   relocate(Inversion, .after = Chromosome) %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 

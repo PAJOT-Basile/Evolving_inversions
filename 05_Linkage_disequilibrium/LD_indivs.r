@@ -8,13 +8,13 @@ rm(libraries)
 colfunc <- colorRampPalette(colors = c("#813d32","#ef852f","#fdc441" ,"#e3cfb4") %>% rev)
 
 ############### Useful functions ###############
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ############### Import inversion delimitations ###############
-delimitation_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions_post_stats.tsv",
+delimitation_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions_post_stats.tsv",
                                       header = TRUE)
 ############### Import local pca output ###############
-pca_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+pca_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                              header = TRUE) 
 
 ############### Compute LD per population ###############
@@ -53,7 +53,7 @@ LD_inversions_indivs <- LD_inversions_indivs %>%
 
 
 LD_inversions_indivs %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/LD_inversions.tsv",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/LD_inversions.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 
 
@@ -79,5 +79,5 @@ delimitation_inversions %>%
     TRUE ~ Inversion
   )) %>% 
   # And save the output as the delimitation of the chromosomal inversions
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)

@@ -10,7 +10,7 @@ my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -62,14 +62,14 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
 
 ################## Scaled relatedness matrix (calculated from vcftools)  ##################
 ### France
-vcf_file <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
+vcf_file <- "../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
 vcftools <- "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools"
 system2(vcftools,args =c(paste0("--gzvcf ",
                                vcf_file,
                                " --relatedness",
-                               " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
-                               " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness")))
-relatedness_france <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness.relatedness", header = TRUE) %>%
+                               " --keep ../../Output/Data/Reference_indivs_expos/Reference_indivs_expos/French_pop.txt",
+                               " --out ../../Output/Sweden_France_parallelism/Relatedness/French_relatedness")))
+relatedness_france <- read.table("../../Output/Sweden_France_parallelism/Relatedness/French_relatedness.relatedness", header = TRUE) %>%
   rename(Relatedness = RELATEDNESS_AJK) %>%
   pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
   column_to_rownames("INDV1")
@@ -78,9 +78,9 @@ relatedness_france <- read.table("/shared/projects/pacobar/finalresult/Littorina
 system2(vcftools,args =c(paste0("--gzvcf ",
                                vcf_file,
                                " --relatedness",
-                               " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Swedish_pop.txt",
-                               " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness")))
-relatedness_sweden <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness.relatedness", header = TRUE) %>%
+                               " --keep ../../Output/Data/Reference_indivs_expos/Swedish_pop.txt",
+                               " --out ../../Output/Sweden_France_parallelism/Relatedness/Swedish_relatedness")))
+relatedness_sweden <- read.table("../../Output/Sweden_France_parallelism/Relatedness/Swedish_relatedness.relatedness", header = TRUE) %>%
   rename(Relatedness = RELATEDNESS_AJK) %>%
   pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
   column_to_rownames("INDV1")
@@ -116,7 +116,7 @@ kin_france <- relatedness_france %>%
   mutate(across(everything(), .fns = function(x) (x + abs(min_rel_france)) / (max_rel_france - min_rel_france))) %>% 
   as.matrix
 kin_france %>%
-  write.table("../../Sweden_France_parallelism/Relatedness/French_scaled_relatedness.tsv",
+  write.table("../../Output/Sweden_France_parallelism/10_GWAS/Relatedness/French_scaled_relatedness.tsv",
               col.names = FALSE, row.names = FALSE, quote = FALSE, sep = "\t")
 
 ## Sweden
@@ -126,7 +126,7 @@ kin_sweden <- relatedness_sweden %>%
   mutate(across(everything(), .fns = function(x) (x + abs(min_rel_sweden)) / (max_rel_sweden - min_rel_sweden))) %>% 
   as.matrix
 kin_sweden %>%
-  write.table("../../Sweden_France_parallelism/Relatedness/Swedish_scaled_relatedness.tsv",
+  write.table("../../Output/Sweden_France_parallelism/10_GWAS/Relatedness/Swedish_scaled_relatedness.tsv",
               col.names = FALSE, row.names = FALSE, quote = FALSE, sep = "\t")
 
 ################## Transform data and plot it  ##################

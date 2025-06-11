@@ -27,8 +27,7 @@ outdir <- xargs$outdir
 print("Imported arguments")
 
 ################## Get the argument given in input  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
-print("Imported arguments and function")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 ################## Import the vcf file  ##################
 data <- read.vcfR(vcf_file) %>% 
   vcfR2genind()

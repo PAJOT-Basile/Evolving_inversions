@@ -6,17 +6,17 @@ name: Variables
 ########################  Paths to use  ###############################
 
 # Raw data path: where to find the raw data ?
-raw_data_path: "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/outputs/01_Processing_of_short_read_data/08_Full_VCF/"
+raw_data_path: "../../Output/SNP_calling/08_Full_VCF/"
 
 # Pop_map: path to the pop_map directory. This path is required to run the snakemake. It should contain one text file per population to analyse.
 # For each population, the text file should contain the list of the samples to run the analysis on, without the extensions.
-pop_maps: "/shared/projects/pacobar/script/Littorina_WGS_illumina/Snakemake_filtering_VCF/Pop_map/"
+pop_maps: "./Pop_map/"
 
 # Folder where all the temporary files will be stored
-tmp_path: "/shared/scratch/pacobar/bpajot/tmp/Filtering_VCF_File/"
+tmp_path: "../../Output/tmp/"
 
 # Where to save the final output data
-output_path: "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/"
+output_path: "../../Output/"
 
 
 
@@ -49,22 +49,7 @@ thin: 1000
 -----------------------  Profile  -----------------------
 ---------------------------------------------------------
 name: Profile
-########################  Cluster identification  ###############################
-# cluster-generic-submit-cmd:
-#   mkdir -p /shared/home/bpajot/fabalis/script/Littorina_WGS_illumina/Snakemake_filtering_VCF/logs/{rule}/error_files/ &&
-#   mkdir -p /shared/home/bpajot/fabalis/script/Littorina_WGS_illumina/Snakemake_filtering_VCF/logs/{rule}/logs/ &&
-#   sbatch
-#     --account=pacobar
-#     --partition={resources.partition}
-#     --cpus-per-task={threads}
-#     --mem={resources.mem_mb}
-#     --job-name={rule}-{wildcards}
-#     --output=/shared/home/bpajot/fabalis/script/Littorina_WGS_illumina/Snakemake_filtering_VCF/logs/{rule}/logs/{rule}-{wildcards}-%j.out
-#     --error=/shared/home/bpajot/fabalis/script/Littorina_WGS_illumina/Snakemake_filtering_VCF/logs/{rule}/error_files/{rule}-{wildcards}-%j.err
-#     --parsable
-#     --time={resources.runtime}
-
-########################  Resources to use  ###############################
+########################  Resources to use and cluster identification  ###############################
 default-resources:
   slurm_account: "'pacobar'"
   slurm_partition: "'fast'"

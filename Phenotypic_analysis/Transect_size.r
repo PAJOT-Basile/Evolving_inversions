@@ -3,7 +3,7 @@ if (!require("anyLib")) install.packages("anyLib")
 anyLib::anyLib(c("tidyverse", "readxl", "ggh4x", "bbmle", "tie", "ggforce", "ggpubr", "ggnewscale", "rmarkdown"))
 
 ################################ Useful functions ################################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 zip <- function(...){
   mapply(list, ..., SIMPLIFY=FALSE)
@@ -16,7 +16,7 @@ enumerate <- function(...){
 # Color palette to be reused everywhere with the shell size
 size_palette = c("#4e79a7", "grey75", "#f28e2b")
 ################################ Import metadata ################################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                    sheet = 1,
                    col_names = TRUE,
                    trim_ws = TRUE) %>%

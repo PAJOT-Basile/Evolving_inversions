@@ -8,7 +8,7 @@ colfunc <- colorRampPalette(colors = c("#813d32","#ef852f","#fdc441" ,"#e3cfb4")
 my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 # Function to get the exposition of a group of individuals using the DAPC cluster outputs
 # This function requires a Group (DAPC clustering) and a Sample_Name (name of the samples) column to work
@@ -57,7 +57,7 @@ calculate_heterozygosity <- function(genetic_data, exposition){
 }
 
 ################## Import metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -97,16 +97,12 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
   # Drop unused levels
   droplevels
 
-################## Import the cline parameters  ##################
-cline_params <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/06_Cline_analysis/Cline_parameters.tsv",
-                           sep = "\t", header = TRUE) %>% 
-  pivot_wider(names_from = Population, values_from = c(Centre, Width, Left, Right))
 ################## Import the pca ouptut data  ##################
-output_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+output_pca <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                          sep = "\t", header = TRUE)
 
 ################## Import the inversion delimitations  ##################
-delimitation_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversion_post_pca.tsv",
+delimitation_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversion_post_pca.tsv",
                                       sep = "\t", header = TRUE) %>% 
   inner_join(output_pca, by = c("Inversion", "Population", "Chromosome")) %>%
   pivot_wider(names_from = "Population", values_from = c("Start", "End", "Length")) %>% 
@@ -118,7 +114,7 @@ delimitation_inversions <- read.table("/shared/projects/pacobar/finalresult/Litt
 
 
 ################## Import the genetic data  ##################
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 
@@ -198,11 +194,11 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
   cat(inversion, "\t", progress_bar(2, 3))
 
   ## Calculate the mean LD
-  LD_table <- read.table(paste0("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/05_LD_computations/France/LD_values/", chromosome, ".geno.ld"),
+  LD_table <- read.table(paste0("../../Output/Sweden_France_parallelism/05_LD_computations/France/LD_values/", chromosome, ".geno.ld"),
                          sep = "\t", header = TRUE) %>% 
     rename(LD = "R.2") %>% 
     mutate(Population = "France") %>% 
-    rbind(read.table(paste0("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/05_LD_computations/Sweden/LD_values/", chromosome, ".geno.ld"),
+    rbind(read.table(paste0("../../Output/Sweden_France_parallelism/05_LD_computations/Sweden/LD_values/", chromosome, ".geno.ld"),
                      sep = "\t", header = TRUE) %>% 
             rename(LD = "R.2") %>% 
             mutate(Population = "Sweden")) %>% 
@@ -231,12 +227,12 @@ for (inversion in delimitation_inversions$Inversion %>% unique){
     "Hobs_France_ES" = (Hobs_France$Transition) %>% round(digits = 4),
     "Hobs_France_SS" = (Hobs_France$Sheltered) %>% round(digits = 4))
     
-  if (!file.exists("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv")){
+  if (!file.exists("../../Output/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv")){
     df_add %>%
-      write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv", append = TRUE, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+      write.table("../../Output/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv", append = TRUE, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
   }else{
     df_add %>%
-      write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv", append = TRUE, sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
+      write.table("../../Output/Sweden_France_parallelism/04_Inversions/Stats_inversions.tsv", append = TRUE, sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
   }
   SV_stats <- add_table_to_df_in_iteration(SV_stats,
                                            df_add)
@@ -245,7 +241,7 @@ rm(inversion, chromosome, list_positions_in_inversion, df_add, LD_table, Distinc
    Poly_France, Poly_Sweden, Poly_two_pops, Hobs, summary_exposition_individuals, data_inv)
 
 ################## Select the inversions that fit the description  ##################
-SV_stats <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Stats/Stats_inversions.tsv",
+SV_stats <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Stats/Stats_inversions.tsv",
                        header = TRUE, sep = "\t") %>% 
   select(-c(Nb_Snps, Hobs_EE, Hobs_ES, Hobs_SS, contains("LD"), Start, End, Length)) %>% 
   pivot_longer(cols = contains("Hobs"), names_to = "Genotype", values_to = "Hobs") %>% 
@@ -261,10 +257,10 @@ SV_stats %>%
   arrange(Population,
           as.numeric(gsub("\\D*(\\d+).*", "\\1", Inversion))) %>% 
   select(-c(EE, ES, SS)) %>% 
-  left_join(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversion_post_pca.tsv",
+  left_join(read.table("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversion_post_pca.tsv",
                        sep = "\t", header = TRUE),
             by = c("Chromosome", "Inversion", "Population")) %>% 
   # And save the outuput
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Candidate_inversions_post_stats.tsv",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/Candidate_inversions_post_stats.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
   

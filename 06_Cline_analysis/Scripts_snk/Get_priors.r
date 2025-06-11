@@ -18,7 +18,7 @@ metadata_path <- xargs$metadata
 output_file <- xargs$output
 vcf_file <- xargs$genetic_data
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################## Import the vcf file  ##################
 data <- read.vcfR(vcf_file) %>% 

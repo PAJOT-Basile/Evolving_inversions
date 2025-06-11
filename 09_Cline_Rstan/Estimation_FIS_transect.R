@@ -42,10 +42,10 @@ model_comp_allLG<-NULL
 
 ######################################################################################################################
 ## input data
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################## Import metadata  ##################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -85,11 +85,11 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
   # Drop unused levels
   droplevels
 # Import the delimiation of the inversions
-delim_inversions <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+delim_inversions <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                                sep = "\t", header = TRUE) %>% 
   filter(Inversion %!in% c("Inv_3.2", "Inv_4.2", "Inv_14.2"))
 # Import output pca
-output_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+output_pca <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                          sep = "\t", header = TRUE) %>% 
   inner_join(delim_inversions %>%
                select(-c(Start, End, Length, Inversion)) %>% 
@@ -98,7 +98,7 @@ output_pca <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_ill
              by = c("Chromosome", "Population", "Inversion"),
              relationship = "many-to-many") %>% 
   mutate(Inversion = Inversion %>% 
-           factor(levels = read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
+           factor(levels = read.table("../../Output/Sweden_France_parallelism/04_Inversions/Inversions_post_pca.tsv",
                                       sep = "\t", header = TRUE) %>%
                     select(Inversion) %>% 
                     unique %>% 
@@ -149,7 +149,7 @@ for (population in fab$Population %>% unique){
                        uplw=log(max(input$LCmeanDist)/1.5))
     
     AF <- stan(
-      file = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/09_Cline_Rstan/AFcline_Fis.stan",  # Stan program - simple cline
+      file = "./09_Cline_Rstan/AFcline_Fis.stan",  # Stan program - simple cline
       data = cline_data,      # named list of data
       chains = nchains,             # number of Markov chains
       warmup = 2000,          # number of warmup iterations per chain
@@ -232,7 +232,7 @@ params_clines %>%
   theme(text = element_text(size = 20))
 
 params_clines %>% 
-  write.table("/shared/home/bpajot/fabalis/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/09_Cline_Rstan/Params_clines_inversions.tsv",
+  write.table("../../Output/Sweden_France_parallelism/09_Cline_Rstan/Params_clines_inversions.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 
 cline_plots %>% 

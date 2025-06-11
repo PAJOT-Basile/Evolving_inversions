@@ -7,27 +7,27 @@ pacman::p_load(char = libraries, character.only = TRUE)
 rm(libraries)
 
 ############################ Useful functions ##########################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 my_theme <- theme_bw() +
   theme(text = element_text(size = 20))
 
 # Import the regions where there are inversions
-Confirmed_inversion <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+Confirmed_inversion <- read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                                   sep = "\t", header = TRUE) %>% 
   group_by(Chromosome, Inversion) %>% 
   summarize(Start = min(Start, na.rm = TRUE),
             End = max(End, na.rm = TRUE),
             Length = End - Start) %>% 
   ungroup %>% 
-  inner_join(read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
+  inner_join(read.table("../../Output/Sweden_France_parallelism/04_Inversions/Delimitation_inversions.tsv",
                         sep = "\t", header = TRUE) %>% 
                filter(Population == "France") %>% 
                select(Chromosome, Inversion, Inversion_grouped),
              by = c("Chromosome", "Inversion"))
 
 # Import the vcf file
-data <- read.vcfR("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/outputs/02_Filter_VCF_Files/11_LAM_and_LOK/VCF_File_Hobs.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz") %>% 
   vcfR2genind()
 
 data@pop <- (data@tab %>% rownames %>% str_split_fixed(., "_", 4))[, 3] %>% as.factor
@@ -99,5 +99,5 @@ local_pca_inversions %>%
          Group = Group %>% factor(levels = c("1", "2", "3", "4", "5", "6")),
          Population = ifelse(grepl("LOK", Sample_Name), "Sweden", "France") %>% 
            factor(levels = c("Sweden", "France"))) %>%
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/04_Inversions/Pca_Together.tsv",
+  write.table("../../Output/Sweden_France_parallelism/04_Inversions/Pca_Together.tsv",
               sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)

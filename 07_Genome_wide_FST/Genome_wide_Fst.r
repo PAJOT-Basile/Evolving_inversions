@@ -6,28 +6,28 @@ rm(libraries)
 
 ################## Sample a vcf file with the reference individuals  ##################
  system2("/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools",
-         args = paste0("--gzvcf /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz",
-                       " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/France_exposed.txt",
-                       " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/France_sheltered.txt",
-                       " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Sweden_exposed.txt",
-                       " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Sweden_sheltered.txt",
+         args = paste0("--gzvcf ../../Output/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz",
+                       " --keep ../../Output/Data/Reference_indivs_expos/France_exposed.txt",
+                       " --keep ../../Output/Data/Reference_indivs_expos/France_sheltered.txt",
+                       " --keep ../../Output/Data/Reference_indivs_expos/Sweden_exposed.txt",
+                       " --keep ../../Output/Data/Reference_indivs_expos/Sweden_sheltered.txt",
                        " --recode",
-                       " --stdout | gzip -c > /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/07_Genome_wide_FST/Reference_indivs.vcf.gz"))
+                       " --stdout | gzip -c > ../../Output/Sweden_France_parallelism/07_Genome_wide_FST/Reference_indivs.vcf.gz"))
 
 # First, import the VCF file as a genlight object
-data <- read.vcfR("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/07_Genome_wide_FST/Reference_indivs.vcf.gz") %>% 
+data <- read.vcfR("../../Output/Sweden_France_parallelism/07_Genome_wide_FST/Reference_indivs.vcf.gz") %>% 
   vcfR2genlight()
 
-ref_indivs <- read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/France_exposed.txt", header = FALSE,
+ref_indivs <- read.table("../../Output/Data/Reference_indivs_expos/France_exposed.txt", header = FALSE,
                          sep = "\t", col.names = "Sample_Name") %>% 
   mutate(Exposition = "Fr_Exp") %>% 
-  rbind(read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/France_sheltered.txt", header = FALSE,
+  rbind(read.table("../../Output/Data/Reference_indivs_expos/France_sheltered.txt", header = FALSE,
                    sep = "\t", col.names = "Sample_Name") %>% 
           mutate(Exposition = "Fr_Shl")) %>% 
-  rbind(read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Sweden_exposed.txt", header = FALSE,
+  rbind(read.table("../../Output/Data/Reference_indivs_expos/Sweden_exposed.txt", header = FALSE,
                    sep = "\t", col.names = "Sample_Name") %>% 
           mutate(Exposition = "Sw_Exp")) %>% 
-  rbind(read.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Sweden_sheltered.txt", header = FALSE,
+  rbind(read.table("../../Output/Data/Reference_indivs_expos/Sweden_sheltered.txt", header = FALSE,
                    sep = "\t", col.names = "Sample_Name") %>% 
           mutate(Exposition = "Sw_Shl"))
 
@@ -42,9 +42,9 @@ data@pop <- data@ind.names %>%
 Fst_ecotypes <- stamppFst(data, nboots = 10000, percent = 95, nclusters = 3)
 
 Fst_ecotypes$Fsts %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/07_Genome_wide_FST/Ecotype_Fst.tsv",
+  write.table("../../Output/Sweden_France_parallelism/07_Genome_wide_FST/Ecotype_Fst.tsv",
               sep = "\t", col.names = TRUE, row.names = TRUE, quote = FALSE)
 
 Fst_ecotypes$Pvalues %>% 
-  write.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/07_Genome_wide_FST/Ecotype_Pvalues.tsv",
+  write.table("../../Output/Sweden_France_parallelism/07_Genome_wide_FST/Ecotype_Pvalues.tsv",
               sep = "\t", col.names = TRUE, row.names = TRUE, quote = FALSE)

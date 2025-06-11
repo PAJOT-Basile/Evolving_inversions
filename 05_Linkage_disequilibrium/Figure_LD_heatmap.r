@@ -3,7 +3,7 @@
 library(tidyverse)
 
 ############### Useful functions ###############
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ############### Useful variables ###############
 # Make a function to sample colours in a user-defined scale
@@ -15,7 +15,7 @@ for (population in c("Sweden", "France")){
   print(population)
 
   # Get the name of the directory where the LD values are stored 
-  Storage_directory <- paste0("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/05_LD_computations/", population, "/LD_values/")
+  Storage_directory <- paste0("../../Output/Sweden_France_parallelism/05_LD_computations/", population, "/LD_values/")
 
   # Initialise the output data frame containig the LD and iterate over the files in the storage directory to load them successively
   LD_df <- data.frame()
@@ -66,7 +66,7 @@ for (population in c("Sweden", "France")){
       labs(x = "Position along the chromosome (*1e5)",
            y = "Position along the chromosome (*1e5)")) %>% 
   # Save the graph into a file
-    ggsave(plot = ., filename = paste0("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/05_LD_computations/", population, "/LD_heatmaps/LD_heatmaps.png"),
+    ggsave(plot = ., filename = paste0("../../Output/Sweden_France_parallelism/05_LD_computations/", population, "/LD_heatmaps/LD_heatmaps.png"),
            device = "png", width = 2000, height = 1800, units = "px", scale = 5, limitsize = FALSE)
 }
 print("Done")

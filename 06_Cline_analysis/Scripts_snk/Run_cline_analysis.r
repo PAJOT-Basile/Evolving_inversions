@@ -23,7 +23,7 @@ output_file <- xargs$output
 high_freq_path <- xargs$high_delta_freqs
 print("Imported arguments")
 ################## Useful functions  ##################
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################## Import the vcf file  ##################
 data <- read.vcfR(vcf_file) %>% 

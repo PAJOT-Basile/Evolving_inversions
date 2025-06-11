@@ -13,7 +13,7 @@ enumerate <- function(...){
 }
 
 # Apply the three models to the colors (stable model, linear model and clinal model)
-source("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Functions_optimise_plot_clines.r")
+source("../General_scripts/Functions_optimise_plot_clines.r")
 
 ################################ Useful variables ################################
 # Color palette to be reused everywhere with the shell colors
@@ -24,7 +24,7 @@ size_palette = c("#4e79a7", "grey75", "#f28e2b")
 
 
 ################################ Import metadata ################################
-metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Phenotypic/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
@@ -65,12 +65,6 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
   filter(Single_location %in% c("FRA_LAM_n", "SWE_LOK_n")) %>% 
   mutate(Single_location = ifelse(Single_location == "FRA_LAM_n", "France", "Sweden") %>% factor(levels = c("Sweden", "France")))
 
-
-
-# Deal with missing metadata (drop lines that have less than the calculated threshold of 5% of missing metadata)
-#threshold <- ((metadata %>% nrow) * .05) %>% floor
-#metadata <- metadata %>% drop_na(((metadata %>% is.na %>% colSums) < threshold) %>% names)
-
 ################################ Color part of the importation ################################
 
 # Modify the colors to a bi-allelic gene
@@ -88,8 +82,6 @@ metadata <- metadata %>%
          Shell_color_naive_color = Shell_color_naive_color %>% factor(levels = c("Yellow", "Brown")),
          Shell_color_morphology = ifelse(! Shell_color_morphology %in% c("Banded", "Square"), "Uniform", "Banded")) %>% 
   mutate(Genotype_shell_color_naive = ifelse(Shell_color_naive_color == "Yellow", 0, 1)) #%>% 
-#mutate(Single_location = ifelse(Single_location == "France", "France", "Suède") %>% factor(levels = c("Suède", "France")),
-#Shell_color_naive_color = ifelse(Shell_color_naive_color == "Yellow", "Jaune", "Marron"))
 
 # First, we need the priors. As the values are not the same for each location, we separate them
 Priors_values_cline_color <- data.frame(Centre_color_Prior = c(200, 70),
@@ -361,7 +353,6 @@ Conf_interval_cline_color <- data2 %>%
          Width_2.5 = Width_2.5i)
 
 ################################ Make the figures ################################
-# In english
 data2 %>%
   mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
            factor(levels = c("Sweden", "France"))) %>% 
@@ -435,17 +426,6 @@ data2 %>%
   scale_color_manual(name = "Shell color",
                      values=c("brown", "orange"),
                      guide = "none") +
-  # new_scale_color() +
-  # geom_point(data = data2 %>% 
-  #              mutate(Single_location = Single_location %>% 
-  #                       factor(levels = c("Sweden", "France")),
-  #                     Cline = "Off" %>% 
-  #                       factor(levels = c("Size", "Color", "Off")),
-  #                     Habitat = Habitat %>% 
-  #                       factor(levels = c("Sheltered", "Transition", "Exposed"))),
-  #            aes(x = LCmeanDist, y = Length, color = Habitat)) +
-  # scale_color_manual(name = "Habitat",
-  #                 values = c("Sheltered" = "dodgerblue2", "Transition" = "deeppink", "Exposed" = "orange2")) +
   # Parameters of the graph
   facet_grid2(vars(Cline), vars(Single_location),
               scales="free",
@@ -458,77 +438,7 @@ data2 %>%
   theme(strip.placement = "outside")
 
 
-# In french
-data2 %>%
-  mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
-           factor(levels = c("Sweden", "France"))) %>% 
-  ggplot(aes(x = LCmeanDist, y = Length)) +
-  # The size cline
-  geom_point(data = data2 %>%
-               mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
-                        factor(levels = c("Sweden", "France")),
-                      Cline = "Size" %>% 
-                        factor(levels = c("Size", "Color")),
-                      Shell_color_naive_color = ifelse(Shell_color_naive_color == "Yellow", "Jaune", "Marron") %>% 
-                        factor(levels = c("Marron", "Jaune"))),
-             aes(colour=Shell_color_naive_color), size=2, alpha = 0.7) +
-  geom_line(data=Plotting_data_size %>% 
-              mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
-                       factor(levels = c("Sweden", "France")),
-                     Cline = "Size" %>% 
-                       factor(levels = c("Size", "Color"))),
-            aes(x=position, y=phen_cline), color="black", linewidth=2) +
-  geom_vline(data = data2 %>%
-               mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
-                        factor(levels = c("Sweden", "France")),
-                      Cline = "Size" %>% 
-                        factor(levels = c("Size", "Color"))) %>% 
-               filter(!is.na(Cline)) %>% 
-               select(Centre_size, Cline, Single_location) %>% unique,
-             aes(xintercept = Centre_size),
-             linetype = "dashed", linewidth = 1) +
-  # Color scale for the shell size
-  geom_point(data = data2 %>%
-               mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
-                        factor(levels = c("Sweden", "France")),
-                      Cline = "Color" %>% 
-                        factor(levels = c("Size", "Color")),
-                      Shell_color_naive_color = ifelse(Shell_color_naive_color == "Yellow", "Jaune", "Marron") %>% 
-                        factor(levels = c("Marron", "Jaune"))),
-             aes(y=Genotype_shell_color_naive, color = Shell_color_naive_color), size=2, alpha=0.7) +
-  geom_line(data= Plotting_data_color %>% 
-              mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>% 
-                       factor(levels = c("Sweden", "France")),
-                     Cline = "Color" %>% 
-                       factor(levels = c("Size", "Color"))),
-            aes(x=position, y=phen_cline), color = "black", linewidth=2) +
-  geom_vline(data = data2 %>%
-               mutate(Single_location = ifelse(Single_location == "Sweden", "Sweden", "France") %>%
-                        factor(levels = c("Sweden", "France")),
-                      Cline = "Color" %>% 
-                        factor(levels = c("Size", "Color"))) %>% 
-               filter(!is.na(Cline)) %>% 
-               select(Centre_color, Cline, Single_location) %>% unique,
-             aes(xintercept = Centre_color),
-             linetype = "dashed", linewidth = 1) +
-  scale_color_manual(name = "Couleur\nCoquille",
-                     values=c("brown", "orange"),
-                     guide = guide_legend(order = 2)) +
-  # Parameters of the graph
-  facet_grid2(vars(Cline), vars(Single_location),
-              scales="free",
-              switch = "y",
-              labeller = as_labeller(c("Size" = "Taille \n(mm)", "Color" = "Fréquence de couleur\nmarron",
-                                       "Sweden" = "Suède", "France" = "France"))) +
-  labs(x = "Position le long du transect (m)",
-       y = "") +
-  theme_bw() +
-  theme(text = element_text(size=20),
-        strip.placement = "outside")
-
-
 ################################ Confidence intervals for color ################################
-
 Conf_interval_cline_color_fr <- data1_color %>% 
   left_join(Priors_values_cline_color, by = "Single_location") %>% 
   filter(Single_location == "France") %>% 
