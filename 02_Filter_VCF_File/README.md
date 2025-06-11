@@ -35,13 +35,16 @@ This script will create new directories in the output path that was given in the
 
 
 ```
+- bcftools = 1.16
+- vcftools = 0.1.16
+
 - python3:
     - math
     - pandas
     - os
     - numpy
 
-- snakemake     # v.7.25.0 with a conda environment
+- snakemake     # v.8.9.0 with a conda environment
 
 - R             # v.3.3.1 at least
     - tidyverse

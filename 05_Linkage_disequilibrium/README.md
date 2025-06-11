@@ -5,10 +5,12 @@
 
 This directory contains scripts to compute the linkage disequilibrium (LD) along each chromosome of each population. Some scripts are used to run the LD calculations (statistical LD) in parallel using snakemake. The script `LD_indivs.r` is used to calculate a hand LD as such: LD = percentage of individuals that have the same karyotype on several inversions. For example, if all individuals that have the most common karyotype in the exposed part on chromosome 3 also have the most common inversion karyotype in the exposed part on chromosome 11, we say that they have a LD of 1. 
 
-The rest of the scripts are used in a snakemake to run the LD computations in parallel for all populations and all chromosomes. This snakemake thus requires that a `Chromosome` directory be specified with a file containing the names of all the chromosomes and a `Pop_map` directory with the names of the individuals in the different populations. For this directory, see section [02](../02_Filter_VCF_File/) for indications on how to fill the `Pop_map` directory.
+The rest of the scripts are used in a snakemake to run the LD computations in parallel for all populations and all chromosomes. This snakemake thus requires that a `Chromosome` directory be specified with a file containing the names of all the chromosomes (just like in the folder) and a `Pop_map` directory with the names of the individuals in the different populations. For this directory, see section [02](../02_Filter_VCF_File/) for indications on how to fill the `Pop_map` directory.
+
+It is a good idea to run this step before running the script that calculates [stats on the inversions](../04_Delim_inversions/03_Stats_inversions.r) as LD is calculated here and is used in the previous script to compute a mean LD on the inversions.
 
 ## How to use these scripts?
-
+### The Snakemake
 To use these scripts, there are several steps. 
 1. First, modify the `configuration_file.yaml` file so the paths correspond to some paths you can use on your machine. Full paths are prefered, but relative paths can also be used.
 Modify the variables to optimise the use of Snakemake.
@@ -22,7 +24,7 @@ If you are lost, you can display an assistance message with:
 ```
 sbatch launcher.sh -h
 ```
-
+### The Rscript
 To run the last script (`LD_indivs.r`), open it using [RStudio](https://posit.co/) and execute it line by line. 
 
 
@@ -37,8 +39,12 @@ This script will create new directories in the output path that was given in the
   - bcftools = 1.16
   - vcftools = 0.1.16
 
-  - R             # v.3.3.1 at least
+  
+  - snakemake     # v.7.25.0 with a conda environment
+
+  - R             # v.4.3.1
     - pacman
     - tidyverse
     - argparse
+    - ggforce
 ```

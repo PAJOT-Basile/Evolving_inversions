@@ -174,67 +174,11 @@ metadata %>%
  write.table("/shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
              quote = FALSE, row.names = FALSE, col.names = FALSE, sep = "\t")
 ## First, we import the relatedness calculated with vcftools with this command lines
-### France
-vcf_file <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
-vcftools <- "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools"
-system2(vcftools,args =c(paste0("--gzvcf ",
-                               vcf_file,
-                               " --relatedness",
-                               " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
-                               " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness")))
-relatedness_france <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness.relatedness", header = TRUE) %>%
-  rename(Relatedness = RELATEDNESS_AJK) %>%
-  pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
-  column_to_rownames("INDV1")
-
-## Sweden
-system2(vcftools,args =c(paste0("--gzvcf ",
-                               vcf_file,
-                               " --relatedness",
-                               " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Swedish_pop.txt",
-                               " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness")))
-relatedness_sweden <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness.relatedness", header = TRUE) %>%
-  rename(Relatedness = RELATEDNESS_AJK) %>%
-  pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
-  column_to_rownames("INDV1")
-
-# The matrix is not symmetrical but triangular, so, we make it symmetrical by hand
 ## France
-for (i in 1:nrow(relatedness_france)){
-  for (j in 1:ncol(relatedness_france)){
-    if (i == j){
-      relatedness_france[i, j] <- 1
-    }else if (relatedness_france[i, j] %>% is.na){
-      relatedness_france[i, j] <- relatedness_france[j, i]
-    }
-  }
-}
+kin_france <- read.table("../../Sweden_France_parallelism/Relatedness/French_scaled_relatedness.tsv", header = FALSE)
 
 ## Sweden
-for (i in 1:nrow(relatedness_sweden)){
-  for (j in 1:ncol(relatedness_sweden)){
-    if (i == j){
-      relatedness_sweden[i, j] <- 1
-    }else if (relatedness_sweden[i, j] %>% is.na){
-      relatedness_sweden[i, j] <- relatedness_sweden[j, i]
-    }
-  }
-}
-
-# Now, we scale the matrix to only have a positive relatedness between 0 and 1
-## France
-min_rel_france <- relatedness_france %>% min
-max_rel_france <- relatedness_france %>% max
-kin_france <- relatedness_france %>% 
-  mutate(across(everything(), .fns = function(x) (x + abs(min_rel_france)) / (max_rel_france - min_rel_france))) %>% 
-  as.matrix
-
-## Sweden
-min_rel_sweden <- relatedness_sweden %>% min
-max_rel_sweden <- relatedness_sweden %>% max
-kin_sweden <- relatedness_sweden %>% 
-  mutate(across(everything(), .fns = function(x) (x + abs(min_rel_sweden)) / (max_rel_sweden - min_rel_sweden))) %>% 
-  as.matrix
+kin_sweden <- read.table("../../Sweden_France_parallelism/Relatedness/Swedish_scaled_relatedness.tsv", header = FALSE)
 
 ################## Make the gData objects  ##################
 ## France

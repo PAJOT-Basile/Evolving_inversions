@@ -14,7 +14,7 @@ The first script `01_Analysis_HMM.r` allows to analyse the output of the HMM and
 
 The second script `02_Local_PCA_inversions.r` runs a local PCA on the delimitations of the islands of high differentiation identified earlier. If we find three clusters, the island of differentiation is kept for the next step. Again, the selection of the islands of differentiation are done by visual ispection of the local PCA results. The selection process might be different in other cases.
 
-The third script `03_Stats_inversions.r` computes basic stats (heterozygosity and mean linkage disequilibrium calculated on the inversion) on the identified islands of differentiation kept in the previous script. The linkage disequilibrium part requires to run scripts in the [next part](../05_Linkage_disequilibrium/), so you can look ahead and come back to this script later. This step produces a table that keeps only islands of differentiation that have a higher heterozygosity in the heterokaryotype than in the homokaryotypes. We call these resulting islands of differentiation inversions.
+The third script `03_Stats_inversions.r` computes basic stats (heterozygosity and mean linkage disequilibrium calculated on the inversion) on the identified islands of differentiation kept in the previous script. The linkage disequilibrium part requires to run scripts in the [next part](../05_Linkage_disequilibrium/), so you can look ahead and come back to this script later. This step produces a table that keeps only islands of differentiation that have a higher heterozygosity in the heterokaryotype than in the homokaryotypes. We call these resulting islands of differentiation inversions. Thisscript can be run in the background using the `launcher.sh` script.
 
 Finally, the fourth script `04_Figure_local_pca_inside_differetiation_islands.r` reruns the local PCA analyses on the two populations just in the inversions that were kept after all these steps to make a nice figure.
 
@@ -27,7 +27,7 @@ These scripts will create tsv files that contain the coordinates of the islands 
 
 
 ```
-- R             # v.3.3.1 at least
+- R             # v.4.4.1 at least
     - pacman
     - tidyverse
     - vcfR

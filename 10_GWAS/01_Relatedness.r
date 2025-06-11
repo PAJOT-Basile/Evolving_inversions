@@ -61,16 +61,28 @@ metadata <- read_excel(path = "/shared/projects/pacobar/finalresult/bpajot/Stage
 
 
 ################## Scaled relatedness matrix (calculated from vcftools)  ##################
-## France
-relatedness_france <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness.relatedness", header = TRUE) %>% 
-  rename(Relatedness = RELATEDNESS_AJK) %>% 
-  pivot_wider(names_from = INDV2, values_from = Relatedness) %>% 
+### France
+vcf_file <- "/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/02_Filter_VCF/09_Maf_thin/VCF_File.vcf.gz"
+vcftools <- "/shared/software/miniconda/envs/vcftools-0.1.16/bin/vcftools"
+system2(vcftools,args =c(paste0("--gzvcf ",
+                               vcf_file,
+                               " --relatedness",
+                               " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/French_pop.txt",
+                               " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness")))
+relatedness_france <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/French_relatedness.relatedness", header = TRUE) %>%
+  rename(Relatedness = RELATEDNESS_AJK) %>%
+  pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
   column_to_rownames("INDV1")
 
 ## Sweden
-relatedness_sweden <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness.relatedness", header = TRUE) %>% 
-  rename(Relatedness = RELATEDNESS_AJK) %>% 
-  pivot_wider(names_from = INDV2, values_from = Relatedness) %>% 
+system2(vcftools,args =c(paste0("--gzvcf ",
+                               vcf_file,
+                               " --relatedness",
+                               " --keep /shared/projects/pacobar/finalresult/bpajot/Stage_Roscoff/Data/Reference_indivs_expos/Swedish_pop.txt",
+                               " --out /shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness")))
+relatedness_sweden <- read.table("/shared/projects/pacobar/finalresult/Littorina_WGS_illumina/Sweden_France_parallelism/Relatedness/Swedish_relatedness.relatedness", header = TRUE) %>%
+  rename(Relatedness = RELATEDNESS_AJK) %>%
+  pivot_wider(names_from = INDV2, values_from = Relatedness) %>%
   column_to_rownames("INDV1")
 
 # The matrix is not symmetrical but triangular, so, we make it symmetrical by hand
@@ -103,6 +115,9 @@ max_rel_france <- relatedness_france %>% max
 kin_france <- relatedness_france %>% 
   mutate(across(everything(), .fns = function(x) (x + abs(min_rel_france)) / (max_rel_france - min_rel_france))) %>% 
   as.matrix
+kin_france %>%
+  write.table("../../Sweden_France_parallelism/Relatedness/French_scaled_relatedness.tsv",
+              col.names = FALSE, row.names = FALSE, quote = FALSE, sep = "\t")
 
 ## Sweden
 min_rel_sweden <- relatedness_sweden %>% min
@@ -110,6 +125,9 @@ max_rel_sweden <- relatedness_sweden %>% max
 kin_sweden <- relatedness_sweden %>% 
   mutate(across(everything(), .fns = function(x) (x + abs(min_rel_sweden)) / (max_rel_sweden - min_rel_sweden))) %>% 
   as.matrix
+kin_sweden %>%
+  write.table("../../Sweden_France_parallelism/Relatedness/Swedish_scaled_relatedness.tsv",
+              col.names = FALSE, row.names = FALSE, quote = FALSE, sep = "\t")
 
 ################## Transform data and plot it  ##################
 # First order the individuals to use
@@ -164,7 +182,7 @@ kin_france %>%
 
 
 ############# Test
-plot <- kin_france %>% 
+plot1 <- kin_france %>% 
   as.data.frame %>% 
   rownames_to_column("Sample_Name") %>% 
   gather(key = "Sample_dup", value = "kinship", -Sample_Name) %>% 
@@ -215,5 +233,5 @@ plot2 <- metadata %>%
   labs(x = "Sample",
        y = "Size")
 
-plot / plot2 + plot_layout(guides = "collect")
+plot1 / plot2 + plot_layout(guides = "collect")
   

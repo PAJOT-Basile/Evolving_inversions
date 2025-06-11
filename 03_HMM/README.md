@@ -48,6 +48,11 @@ This script will create new directories in the output path that was given in the
 
 - R             # v.3.3.1 at least
     - pacman
+    - tidyverse
+    - adegenet
+    - pegas
+    - vcfR
+    - readxl
     - HiddenMarkov
     - foreach
     - doParallel

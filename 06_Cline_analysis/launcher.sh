@@ -70,13 +70,9 @@ mkdir -p "${TMPDIR}"
 export TMPDIR TMP TEMP
 
 module load snakemake/7.25.0
-module load r/4.4.1 bc
 echo "Starting Snakemake execution"
 # Run the snakemake file
 snakemake -s "${HERE}/${SNAKEFILE}" --profile "${HERE}/Cluster_profile" --configfile "${HERE}/Configuration_files/Variables_config.yaml"
-# /shared/software/miniconda/envs/snakemake-7.25.0/bin/snakemake -s "${HERE}/${SNAKEFILE}" --profile "${HERE}/Cluster_profile" --configfile "${HERE}/Configuration_files/Variables_config.yaml"
-# snakemake -s "${HERE}/${SNAKEFILE}" --profile "${HERE}/Cluster_profile" --configfile "${HERE}/Configuration_files/Variables_config.yaml" -n
 
-# TODO essayer de jouer avec les reports
+# Unload modules
 module unload snakemake/7.25.0
-module unload r/4.4.1 bc

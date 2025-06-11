@@ -30,12 +30,23 @@ This script will create new directories in the output path that was given in the
 
 
 ```
+- samtools = 1.15.1
+- bwa = 0.7.17
+- fastp = 0.23.1
+- fastqc = 0.12.1
+- multiqc = 1.13
+- bcftools = 1.16
+- vcftools = 0.1.16
+
 - python3:
     - math
+    - os
+    - numpy
 
 - snakemake     # v.7.25.0 with a conda environment
 
 - R             # v.3.3.1 at least
+    - pacman
     - tidyverse
     - ggpubr
     - argparse
