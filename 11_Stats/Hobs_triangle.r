@@ -45,26 +45,16 @@ var_ax2 <- ((pca$eig[2] / sum(pca$eig)) * 100) %>% round(digits = 2)
 var_ax3 <- ((pca$eig[3] / sum(pca$eig)) * 100) %>% round(digits = 2)
 
 ################## Import the metadata  ##################
-metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
+metadata <- read_excel(path = "../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
   
   # Convert to the correct formats
-  mutate(Species = as.factor(Species),
-         ID_number = as.factor(ID_number),
-         Population = as.factor(Population),
-         Transect = as.factor(TRANSECT),
-         Id = as.factor(ID),
+  mutate(Population = as.factor(Population),
          Shell_colour = factor(Shell.colour %>% str_to_title, levels = c("Black", "Black/Square", "Brown", "Brown/Square", "Dark", "Yellow", "Yellow/Brown", "Yellow/Square", "Grey", "White", "Banded", NA)),
          LCmeanDist = as.numeric(LCmeanDist),
-         Mreads = as.numeric(Mreads),
-         Gbp = as.numeric(Gbp),
-         Q30 = as.numeric(Q30),
-         x = as.numeric(x),
-         y = as.numeric(y),
          Length = as.numeric(length),
-         Bi_size = as.factor(biSIZE %>% str_to_title),
          Habitat = ifelse(Habitat %in% c("EXPOS"), "Exposed", Habitat),
          Habitat = ifelse(Habitat %in% c("HARB", "SHELT"), "Sheltered", Habitat),
          Habitat = ifelse(Habitat %in% c("TRANS", "TRANSI"), "Transition", Habitat),
@@ -72,18 +62,13 @@ metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_B
   ) %>%
   
   # Select only the necessary columns for the analysis
-  select(-c(length, biSIZE, Shell.colour, ID, TRANSECT)) %>% 
-  
-  # select only the data we need (the one on fabalis just in the transects from LAM and LOKn)
-  filter(Species == "FAB",
-         Population != "BRE",
-         Transect == "n") %>% 
-  
+  select(-length) %>% 
+
   # Modify the population column to get only the name of the country
   mutate(Population = ifelse(Population == "LOK", "Sweden", "France") %>% 
            factor(levels = c("Sweden", "France"))) %>% 
   # Drop unused levels
-  droplevels %>% 
+  droplevels %>%
   # Change the color information to have it into two simple colors: yellow or brown
   mutate(Shell_color_naive = (Shell_colour %>% str_split_fixed(., "/", 2))[, 1],
          Shell_color_morphology = (Shell_colour %>% str_split_fixed(., "/", 2))[, 2],

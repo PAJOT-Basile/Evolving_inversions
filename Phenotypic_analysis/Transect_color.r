@@ -7,48 +7,31 @@ for (lib in libraries){
 ################################ Useful functions ################################
 source("../General_scripts/Functions_optimise_plot_clines.r")
 
-################################ Import metadata ################################
-metadata <- read_excel(path = "../../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
+################## Import the metadata  ##################
+metadata <- read_excel(path = "../Input_Data/Data/data_Fabalis_resequencing_Basile.xlsx",
                        sheet = 1,
                        col_names = TRUE,
                        trim_ws = TRUE) %>%
   
   # Convert to the correct formats
-  mutate(Species = as.factor(Species),
-         ID_number = as.factor(ID_number),
-         Population = as.factor(Population),
-         Transect = as.factor(TRANSECT),
-         Id = as.factor(ID),
-         Shell.colour = factor(Shell.colour %>% str_to_title, levels = c("Black", "Black/Square", "Brown", "Brown/Square", "Dark", "Yellow", "Yellow/Brown", "Yellow/Square", "Grey", "White", "Banded", NA)),
+  mutate(Population = as.factor(Population),
+         Shell_colour = factor(Shell.colour %>% str_to_title, levels = c("Black", "Black/Square", "Brown", "Brown/Square", "Dark", "Yellow", "Yellow/Brown", "Yellow/Square", "Grey", "White", "Banded", NA)),
          LCmeanDist = as.numeric(LCmeanDist),
-         Mreads = as.numeric(Mreads),
-         Gbp = as.numeric(Gbp),
-         Q30 = as.numeric(Q30),
-         x = as.numeric(x),
-         y = as.numeric(y),
          Length = as.numeric(length),
-         Bi_size = as.factor(biSIZE %>% str_to_title),
          Habitat = ifelse(Habitat %in% c("EXPOS"), "Exposed", Habitat),
          Habitat = ifelse(Habitat %in% c("HARB", "SHELT"), "Sheltered", Habitat),
          Habitat = ifelse(Habitat %in% c("TRANS", "TRANSI"), "Transition", Habitat),
          Habitat = as.factor(Habitat)
-  ) %>% 
-  
-  # Rename the column to get rid of the space (transformed into a dot in the importation)
-  rename(Shell_color = Shell.colour) %>% 
+  ) %>%
   
   # Select only the necessary columns for the analysis
-  select(-c(Penial.glands, NGI_ID, target, TRANSECT, ID, length, biSIZE, Dist, Angle)) %>% 
-  
-  # select only the metadata we need (the one on fabalis)
-  filter(Species == "FAB",
-         Population != "BRE") %>% 
-  
-  # Add a new single location column
-  mutate(Single_location = paste(Country, Population, Transect, sep="_")) %>% 
-  filter(Single_location %in% c("FRA_LAM_n", "SWE_LOK_n")) %>% 
-  mutate(Single_location = ifelse(Single_location == "FRA_LAM_n", "France", "Sweden") %>% factor(levels = c("Sweden", "France")))
+  select(-length) %>% 
 
+  # Modify the population column to get only the name of the country
+  mutate(Single_location = ifelse(Population == "LOK", "Sweden", "France") %>% 
+           factor(levels = c("Sweden", "France"))) %>% 
+  # Drop unused levels
+  droplevels
 
 # Modify the colors to a bi-allelic gene
 Shell_color <- metadata$Shell_color
