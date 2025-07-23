@@ -9,7 +9,7 @@ rm(libraries)
 #library(tidyverse); library(ggforce); library(viridis); library(ggnewscale); library(LaplacesDemon, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/"); library(tie, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/"); library(bbmle); library(zeallot); library(docstring, lib.loc = "/shared/home/bpajot/R/x86_64-conda-linux-gnu-library/4.2/")
 
 # Import functions from the `Cline_functions.R` script
-source("./Cline_functions.R")
+source("/shared/projects//pacobar/finalresult/bpajot/Stage_Roscoff/scripts/A_Genetic_analysis/General_scripts/Cline_functions.R")
 
 ################################################################################
 ######################### 1. Useful functions  #################################
@@ -1197,7 +1197,7 @@ geom_manhattan <- function(df, mapping, thresholding = FALSE, absolute = TRUE, p
   }
 }
 
-thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL, ...){
+thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL, add_text = TRUE, ...){
   #' Draw threshold(s) on a manhattan plot
   #' 
   #' This function re-uses the geom_manhattan function to get a manhattan plot
@@ -1295,13 +1295,17 @@ thresholds_manhattan <- function(df, mapping, percentages = NULL, values = NULL,
     # For each value, we append the plot with the new line and text
     p <- p +
       # We add the horizontal line
-      geom_hline(yintercept = y_value_line, color = "black", lwd = 1.2, lty = "dashed") +
-      # We add the text above
-      annotate("text", x = max_value * 0.975, y = y_value_text,
-               label = ifelse(is_null(percentages), threshold %>% as.character,
-                              paste0((threshold * 100) %>% as.character, "%")),
-               size = 20/.pt)
+      geom_hline(yintercept = y_value_line, color = "black", lwd = 1.2, lty = "dashed")
     
+    if (add_text){
+      p <- p +
+        # We add the text above
+        annotate("text", x = max_value * 0.975, y = y_value_text,
+                 label = ifelse(is_null(percentages), threshold %>% as.character,
+                                paste0((threshold * 100) %>% as.character, "%")),
+                 size = 20/.pt)
+      
+    }
   }
   # Once we iterated over all the possible cutoff values, we return the plot
   return(p)
@@ -1473,6 +1477,7 @@ optimise_clines <- function(Priors, logarithm = FALSE, batch_size = 1000, write_
     # To win some time, we will iterate over all the lines in the table by 
   number_of_iterations <- ((nrow(Priors_func)/batch_size) %>% floor) + 1
   Comp_table <- data.frame()
+  neutral_models <- c("Stable", "Linear")
   for (i in 1:number_of_iterations){
     # Print the progress bar to see where we are in the loop
     progress_bar(iteration_number = i, nb_iterations_to_do = number_of_iterations)
@@ -1794,10 +1799,12 @@ optimise_clines <- function(Priors, logarithm = FALSE, batch_size = 1000, write_
       # Then, we choose which model is the best between the three estimated ones 
       # using the AICs
       mutate(Delta_AIC_stable = AIC_clinal - AIC_stable, Delta_AIC_linear = AIC_clinal - AIC_linear,
-             Best_model = ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable > 0), "Stable",
-                                 ifelse((Delta_AIC_stable > Delta_AIC_linear) & (Delta_AIC_stable < 0), "Clinal",
-                                        ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear > 0), "Linear",
-                                               ifelse((Delta_AIC_stable < Delta_AIC_linear) & (Delta_AIC_linear < 0), "Clinal", NA)))),
+             Best_model = case_when(
+               (Delta_AIC_linear < 0 & Delta_AIC_stable < 0) ~ "Clinal",
+               (Delta_AIC_stable >= 0) & (Delta_AIC_linear < Delta_AIC_stable) ~ "Stable",
+               (Delta_AIC_linear >= 0) & (Delta_AIC_stable < Delta_AIC_linear) ~ "Linear",
+               TRUE ~ NA
+             ),
              Best_model_AIC = ifelse(Best_model == "Stable", AIC_stable, ifelse(Best_model == "Linear", AIC_linear, AIC_clinal)),
              Second_best_model = ifelse(Best_model == "Stable" & Delta_AIC_linear > 0, "Linear",
                                         ifelse(Best_model == "Stable" & Delta_AIC_linear < 0, "Clinal",
@@ -1808,7 +1815,12 @@ optimise_clines <- function(Priors, logarithm = FALSE, batch_size = 1000, write_
                                                   ifelse(Best_model == "Clinal" & Second_best_model == "Stable", AIC_clinal - AIC_stable,
                                                          ifelse(Best_model == "Linear" & Second_best_model == "Clinal", AIC_linear - AIC_clinal,
                                                                 ifelse(Best_model == "Linear" & Second_best_model == "Stable", AIC_linear - AIC_stable,
-                                                                       ifelse(Best_model == "Stable" & Second_best_model == "Clinal", AIC_stable - AIC_clinal, AIC_stable - AIC_linear)))))) %>% 
+                                                                       ifelse(Best_model == "Stable" & Second_best_model == "Clinal", AIC_stable - AIC_clinal, AIC_stable - AIC_linear))))),
+             Significant = case_when(
+               (abs(Delta_AIC_second_best_model) < 4) & (Second_best_model %in% neutral_models) ~ Second_best_model,
+               (abs(Delta_AIC_second_best_model) < 4) & (Best_model %in% neutral_models) ~ Best_model,
+               TRUE ~ Best_model
+             )) %>%  
       # We remove the AICs
       select(-starts_with("AIC_")) %>% 
       # Rename the population and position columns
@@ -2716,7 +2728,7 @@ Run_and_trace_phylogeny <- function(inversion, .output_path = output_path, .list
     "Divergence" = Divergence_karyotypes_countries
   ))
 }
-print("Functions imported successfully")
+print("Finished function importation")
 
 
 
